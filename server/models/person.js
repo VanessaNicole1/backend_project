@@ -2,8 +2,6 @@
 let mongoose = require('mongoose');
 /*Unique-validator*/
 let unique_validator = require('mongoose-unique-validator');
-/*UUID*/
-const UUID = require('uuid/v4');
 
 /*ROL SCHEMA*/
 let Rol = require('./rol');
@@ -15,6 +13,10 @@ let personSchema = new Schema({
     external_id : {
         type : String,
         required : true
+    },
+    estado : {
+        type : Boolean,
+        required : [true, 'Se requiere el estado']
     },
     cedula : {
         type : String,
@@ -58,7 +60,25 @@ let personSchema = new Schema({
         type : String,
         required : false
     },
-    rol : Rol.schema
+    rol : 
+    {
+        type: Schema.Types.ObjectId,
+        ref : 'Rol' 
+    },
+    pagos : [
+        {
+            type: Schema.Types.ObjectId,
+            ref : 'Pago' 
+        }
+    ],
+    created_At : {
+        type : Date,
+        required : [true, 'El created_At es requerido']
+    },
+    updated_At : {
+        type : Date,
+        required : [true, 'El updated_At es requerido']
+    }
 });
 
 personSchema.plugin(unique_validator, {message :  '{PATH} debe de ser único'});
@@ -70,4 +90,4 @@ personSchema.methods.toJSON = function(){
     return personObject;
 }
 
-module.exports = mongoose.model('Person', personSchema);
+module.exports = mongoose.model('Persona', personSchema);

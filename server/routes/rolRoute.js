@@ -31,8 +31,11 @@ APP.post('/', (request, response)=>{
 
     let rol = new Rol({
         nombre : body.nombre,
-        external_id : UUID()
+        external_id : UUID()        
     });
+
+    rol.created_At = new Date(),
+    rol.updated_At = new Date()
 
     rol.save((error, rolGuardado)=>{
         if(error){

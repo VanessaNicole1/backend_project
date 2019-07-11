@@ -9,6 +9,7 @@ let body_parser = require('body-parser');
 /*Importar Rutas*/
 let rolRoutes = require('./routes/rolRoute');
 let personRoutes = require('./routes/personRoute');
+let pagoRoutes = require('./routes/pagoRoute');
 
 let app = express();
 
@@ -18,7 +19,7 @@ app.use(body_parser.json());
 /*===================================
 Conection to MongoDB
 =====================================*/
-mongoose.connect('mongodb://localhost:27017/hospitalAdvanced', 
+mongoose.connect('mongodb://localhost:27017/hospital', 
                 {
                     useFindAndModify : false,
                     useCreateIndex : true,
@@ -34,7 +35,8 @@ mongoose.connect('mongodb://localhost:27017/hospitalAdvanced',
 RUTAS
 =====================================*/
 app.use('/rol', rolRoutes);
-app.use('/person', personRoutes);
+app.use('/persona', personRoutes);
+app.use('/pago', pagoRoutes);
 
 /*===================================
 Montar el servidor
