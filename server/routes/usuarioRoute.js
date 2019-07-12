@@ -1,7 +1,7 @@
 /*Server Express*/
 let express =  require('express');
 /*PERSON MODEL*/
-let Persona = require('../models/person');
+let Usuario = require('../models/usuario');
 /*PAGO MODEL*/
 let Pago = require('../models/pago');
 /*ROL MODEL*/
@@ -10,6 +10,8 @@ let Rol = require('../models/rol');
 const UUID = require('uuid/v1');
 /*Underscore*/
 let under_score = require('underscore');
+/*Bcrypt - para encriptar password*/
+const BCRYPT = require('bcrypt');
 
 const APP  = express();
 
@@ -18,7 +20,7 @@ Listar todos la lista de personas
 =====================================*/
 APP.get('/listar', (request, response)=>{
 
-    Persona.find({'estado' : true})
+    Usuario.find({'estado' : true})
             .exec((error, personsList) => {
 
                 if(error){
@@ -36,14 +38,14 @@ APP.get('/listar', (request, response)=>{
 });
 
 /*===================================
-Listar los pagos activos de determinada persona
-external_id de la persona a consultar
+Listar los pagos activos de determinada usuario
+external_id deL usuario a consultar
 =====================================*/
 APP.get('/listarPagos/:external_id', (request, response)=>{
 
     let external_id = request.params.external_id;
 
-    Persona.find({'estado' : true, 'external_id' : external_id})
+    Usuario.find({'estado' : true, 'external_id' : external_id})
             .populate({
                 path :'pagos',
                 match : {'estado': true}
@@ -67,11 +69,9 @@ APP.get('/listarPagos/:external_id', (request, response)=>{
 Ingresar una nueva persona 
 external_id del rol
 =====================================*/
-APP.post('/ingresar/:external_id', (request, response)=>{
+APP.post('/ingresar', (request, response)=>{
 
-    let external_id = request.params.external_id;
-
-    Rol.findOne({'external_id' : external_id}, (error, rolEncontrado) =>{
+    Rol.findOne({'nombre' : 'USER_ROLE'}, (error, rolEncontrado) =>{
 
         if(error){
             return response.status(500).json({
@@ -88,16 +88,17 @@ APP.post('/ingresar/:external_id', (request, response)=>{
             });
         }
     
-        let personaBody = infoBody(request.body);
-        personaBody.external_id = UUID();
-        personaBody.estado = true;
-        personaBody.created_At = new Date();
-        personaBody.updated_At = new Date();
-        personaBody.rol = rolEncontrado.id;
+        let usuarioBody = infoBody(request.body);
+        usuarioBody.password = BCRYPT.hashSync(usuarioBody.password, 10);
+        usuarioBody.external_id = UUID();
+        usuarioBody.estado = true;
+        usuarioBody.created_At = new Date();
+        usuarioBody.updated_At = new Date();
+        usuarioBody.rol = rolEncontrado.id;
 
-        let persona = new Persona(personaBody);  
+        let usuario = new Usuario(usuarioBody);  
 
-        persona.save((error, personaGuardada)=>{
+        usuario.save((error, usuarioGuardado)=>{
             if(error){
                 return response.status(400).json({
                     ok : false,
@@ -106,7 +107,7 @@ APP.post('/ingresar/:external_id', (request, response)=>{
                 });
             }
 
-            rolEncontrado.personas.push(persona);
+            rolEncontrado.personas.push(usuario);
             rolEncontrado.save((error)=>{
                 if(error){
                     return response.status(400).json({
@@ -117,24 +118,22 @@ APP.post('/ingresar/:external_id', (request, response)=>{
                 }
                 response.status(201).json({
                     ok : true,
-                    personaGuardada
+                    usuarioGuardado
                 });
             });
         });
-    
-
-
     });
 });
 
 /*===================================
 Modificar una persona existente.
+external_id del usuario
 =====================================*/
 APP.put('/modificar/:external_id', (request, response) => {
 
     let external_id = request.params.external_id;
 
-    Persona.findOne({'external_id' : external_id}, (error, personaEncontrada) =>{
+    Usuario.findOne({'external_id' : external_id}, (error, usuarioEncontrado) =>{
 
         if(error){
             return response.status(500).json({
@@ -143,7 +142,7 @@ APP.put('/modificar/:external_id', (request, response) => {
                 errores : error
             });
         }
-        if(!personaEncontrada){
+        if(!usuarioEncontrado){
             return response.status(400).json({
                 ok : false,
                 mensaje : 'No se ha encontrado la persona',
@@ -151,13 +150,13 @@ APP.put('/modificar/:external_id', (request, response) => {
             });
         }
 
-        let personaActualizada = infoBody(request.body);
+        let usuarioActualizado = infoBody(request.body);
        
-        personaActualizada.updated_At = new Date();
+        usuarioActualizado.updated_At = new Date();
 
-        Persona.findByIdAndUpdate(personaEncontrada.id, personaActualizada, {new: true,
+        Usuario.findByIdAndUpdate(usuarioEncontrado.id, usuarioActualizado, {new: true,
                                                         runValidators : true}, 
-                                                        (error, personaModificada) => {
+                                                        (error, usuarioModificado) => {
             if(error){
                 return response.status(408).json({
                     ok : false,
@@ -168,7 +167,7 @@ APP.put('/modificar/:external_id', (request, response) => {
 
             response.status(200).json({
                 ok : true,
-                personaModificada
+                usuarioModificado
             });
         });
     });
@@ -176,12 +175,13 @@ APP.put('/modificar/:external_id', (request, response) => {
 
 /*===================================
 Eliminado Lógico
+external_id del usuario
 =====================================*/
 APP.put('/eliminar/:external_id', (request, response) => {
 
     let external_id = request.params.external_id;
 
-    Persona.findOne({'external_id' : external_id}, (error, personaEncontrada) =>{
+    Usuario.findOne({'external_id' : external_id}, (error, usuarioEncontrado) =>{
 
         if(error){
             return response.status(500).json({
@@ -190,7 +190,7 @@ APP.put('/eliminar/:external_id', (request, response) => {
                 errores : error
             });
         }
-        if(!personaEncontrada){
+        if(!usuarioEncontrado){
             return response.status(400).json({
                 ok : false,
                 mensaje : 'No se ha encontrado la persona',
@@ -198,10 +198,10 @@ APP.put('/eliminar/:external_id', (request, response) => {
             });
         }
         
-        personaEncontrada.updated_At = new Date();
-        personaEncontrada.estado = false;
+        usuarioEncontrado.updated_At = new Date();
+        usuarioEncontrado.estado = false;
 
-        personaEncontrada.save((error, personaEliminada) => {
+        usuarioEncontrado.save((error, usuarioEliminado) => {
             if(error){
                return response.status(408).json({
                     ok : false,
@@ -212,66 +212,12 @@ APP.put('/eliminar/:external_id', (request, response) => {
 
             response.status(200).json({
                 ok : true,
-                personaEliminada
+                usuarioEliminado
             });
         });
     });
 });
-/*===================================
-Ingresar pago para persona.
-=====================================*/
-APP.put('/ingresarPago/:external_id', (request, response)=>{
 
-    let external_id = request.params.external_id;
-
-    Persona.findOne({'external_id' : external_id}, (error, personaEncontrada) =>{
-
-        if(error){
-            return response.status(500).json({
-                ok : false,
-                mensaje : 'Error en el servidor',
-                errores : error
-            });
-        }
-        if(!personaEncontrada){
-            return response.status(400).json({
-                ok : false,
-                mensaje : 'No se ha encontrado la persona',
-                errores : error
-            });
-        }
-        
-        let pagoBody = under_score.pick(body, [
-                                                'tipo',
-                                                'cantidad'
-                                                ]);
-        let created_At = new Date();
-        
-        let pago = new Pago({
-            external_id : UUID(),
-            estado : true, 
-            tipo : pagoBody.tipo,
-            cantidad : pagoBody.cantidad,
-            persona : personaEncontrada.id,
-            created_At,
-            updated_At : created_At
-        });
-
-        pago.save((error, pagoGuardado)=>{
-            if(error){
-                return response.status(408).json({
-                        ok : false,
-                        mensaje : 'Error al guardar el pago',
-                        errores : error
-                    });
-                }
-                response.status(200).json({
-                    ok : true,
-                    pagoGuardado
-                });
-        })
-    });
-});
 
 
 

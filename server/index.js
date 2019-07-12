@@ -8,8 +8,10 @@ let mongoose = require('mongoose');
 let body_parser = require('body-parser');
 /*Importar Rutas*/
 let rolRoutes = require('./routes/rolRoute');
-let personRoutes = require('./routes/personRoute');
+let usuarioRoutes = require('./routes/usuarioRoute');
 let pagoRoutes = require('./routes/pagoRoute');
+let medicoRoutes = require('./routes/medicoRoutes/medicoRoute');
+let especialidadRoute  = require('./routes/medicoRoutes/especialidadRoute');
 
 let app = express();
 
@@ -35,8 +37,10 @@ mongoose.connect('mongodb://localhost:27017/hospital',
 RUTAS
 =====================================*/
 app.use('/rol', rolRoutes);
-app.use('/persona', personRoutes);
+app.use('/persona', usuarioRoutes);
 app.use('/pago', pagoRoutes);
+app.use('/medico', medicoRoutes);
+app.use('/especialidad', especialidadRoute);
 
 /*===================================
 Montar el servidor

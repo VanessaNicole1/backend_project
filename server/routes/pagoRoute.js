@@ -1,7 +1,7 @@
 /*Server Express*/
 let express =  require('express');
 /*PERSON MODEL*/
-let Persona = require('../models/person');
+let Usuario = require('../models/usuario');
 /*PAGO MODEL*/
 let Pago = require('../models/pago');
 /*UUID*/
@@ -35,14 +35,17 @@ APP.get('/listar', (request, response)=>{
 });
 
 /*===================================
-Ingresar una nuevo Pago de una persona 
+Ingresar un nuevo Pago de una persona 
 external_id de la persona
+Params:
+    -cantidad 
+    -tipo
 =====================================*/
 APP.post('/ingresar/:external_id', (request, response)=>{
 
     let external_id = request.params.external_id;
 
-    Persona.findOne({'external_id' : external_id}, (error, personaEncontrada) =>{
+    Usuario.findOne({'external_id' : external_id, "estado" : true }, (error, personaEncontrada) =>{
 
         if(error){
             return response.status(500).json({
@@ -96,7 +99,102 @@ APP.post('/ingresar/:external_id', (request, response)=>{
     });
 });
 
+/*===================================
+Modificar un pago de determinada persona.
+external_id del pago a modificar. 
+Params posibles a modificar:
+    -cantidad 
+    -tipo
+=====================================*/
+APP.put('/modificar/:external_id', (request, response) => {
 
+    let external_id = request.params.external_id;
+
+    Pago.findOne({'external_id' : external_id}, (error, pagoEncontrado) =>{
+
+        if(error){
+            return response.status(500).json({
+                ok : false,
+                mensaje : 'Error en el servidor',
+                errores : error
+            });
+        }
+        if(!pagoEncontrado){
+            return response.status(400).json({
+                ok : false,
+                mensaje : 'No se ha encontrado el pago de la persona',
+                errores : error
+            });
+        }
+
+        let pagoActualizado = infoBody(request.body);
+       
+        pagoActualizado.updated_At = new Date();
+
+        Pago.findByIdAndUpdate(pagoEncontrado.id, pagoActualizado, {new: true,
+                                                        runValidators : true}, 
+                                                        (error, pagoModificado) => {
+            if(error){
+                return response.status(408).json({
+                    ok : false,
+                    mensaje : 'Error al modificar el pago de la persona',
+                    errores : error
+                });
+            }
+
+            response.status(200).json({
+                ok : true,
+                pagoModificado
+            });
+        });
+    });
+});
+
+/*===================================
+Eliminar un pago de determinada persona.
+external_id del pago a eliminar. 
+no params
+=====================================*/
+APP.put('/eliminar/:external_id', (request, response) => {
+
+    let external_id = request.params.external_id;
+
+    Pago.findOne({'external_id' : external_id}, (error, pagoEncontrado) =>{
+
+        if(error){
+            return response.status(500).json({
+                ok : false,
+                mensaje : 'Error en el servidor',
+                errores : error
+            });
+        }
+        if(!pagoEncontrado){
+            return response.status(400).json({
+                ok : false,
+                mensaje : 'No se ha encontrado el pago de la persona',
+                errores : error
+            });
+        }
+
+        pagoEncontrado.updated_At = new Date();
+        pagoEncontrado.estado = false;
+
+        pagoEncontrado.save((error, pagoEliminado) => {
+            if(error){
+                return response.status(408).json({
+                    ok : false,
+                    mensaje : 'Error al eliminar el pago de la persona',
+                    errores : error
+                });
+            }
+
+            response.status(200).json({
+                ok : true,
+                pagoEliminado
+            });
+        });
+    });
+});
 
 
 /*===================================
