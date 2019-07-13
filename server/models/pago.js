@@ -32,7 +32,7 @@ let pagoSchema = new Schema({
     },
     persona : {
         type : Schema.Types.ObjectId,
-        ref : 'Persona'
+        ref : 'Usuario'
     },
     created_At : {
         type : Date,

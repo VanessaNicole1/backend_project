@@ -13,12 +13,6 @@ let rolSchema = new Schema({
         type : String,
         required : true
     },
-    personas : [
-        {
-            type: Schema.Types.ObjectId,
-            ref : 'Persona' 
-        }
-    ],
     created_At : {
         type : Date,
         required : [true, 'El created_At es requerido']

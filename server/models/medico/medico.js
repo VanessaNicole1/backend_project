@@ -12,7 +12,7 @@ medicoSchema.add({
     numeroRegistro : {
         type : String,
         required : [true, 'Es necesario un número de registro'],
-        unique : true,
+        unique : true
     },
     citasDiarias : {
         type : Number,

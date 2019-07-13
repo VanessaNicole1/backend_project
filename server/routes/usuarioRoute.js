@@ -107,19 +107,9 @@ APP.post('/ingresar', (request, response)=>{
                 });
             }
 
-            rolEncontrado.personas.push(usuario);
-            rolEncontrado.save((error)=>{
-                if(error){
-                    return response.status(400).json({
-                        ok : false,
-                        mensaje : 'Error al agregar la persona a los roles',
-                        errores : error
-                    });
-                }
-                response.status(201).json({
-                    ok : true,
-                    usuarioGuardado
-                });
+            response.status(201).json({
+                ok : true,
+                usuarioGuardado
             });
         });
     });

@@ -6,7 +6,7 @@ let Schema = mongoose.Schema;
 let especialidadShema = new Schema({
     nombre : {
         type : String,
-        required : [true, 'Nombre del rol necesario'],
+        required : [true, 'Nombre de la especialidad necesaria'],
         unique : true
     },
     external_id : {
