@@ -67,11 +67,11 @@ let AbstractEntityPerson = function(){
             ref : 'Rol' 
         },       
         created_At : {
-            type : Date,
+            type : String,
             required : [true, 'El created_At es requerido']
         },
         updated_At : {
-            type : Date,
+            type : String,
             required : [true, 'El updated_At es requerido']
         }
     });

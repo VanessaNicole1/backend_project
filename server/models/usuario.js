@@ -15,7 +15,8 @@ usuarioSchema.add({
             ref : 'Pago' 
         }
     ]
-});
+}
+);
 
 usuarioSchema.plugin(unique_validator, {message :  '{PATH} debe de ser único'});
 

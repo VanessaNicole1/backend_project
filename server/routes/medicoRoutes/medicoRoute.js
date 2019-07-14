@@ -16,7 +16,7 @@ const BCRYPT = require('bcrypt');
 const APP  = express();
 
 /*===================================
-Listar todos los médicos
+Listar todos los médicos activos
 =====================================*/
 APP.get('/listar', (request, response)=>{
 
@@ -26,7 +26,7 @@ APP.get('/listar', (request, response)=>{
                 if(error){
                     return response.status(500).json({
                         ok : false,
-                        mensaje : 'Error al obtener la lista de personas',
+                        mensaje : 'Error al obtener la lista de médicos',
                         errores : error
                     });
                 }
@@ -38,7 +38,7 @@ APP.get('/listar', (request, response)=>{
 });
 
 /*===================================
-Listar el médico con su especialidad
+Listar el médico con sus especialidades
 external_id del médico a consultar
 =====================================*/
 APP.get('/listarMedico/:external_id', (request, response)=>{
@@ -68,90 +68,107 @@ APP.get('/listarMedico/:external_id', (request, response)=>{
 
 /*===================================
 Ingresar un nuevo médico 
+required Params:
+    cedula, nombres, apellidos, edad, genero
+    telefono, direccion, correo, password, 
+    numeroRegistro, citasDiarias, sueldo
+optional Params:
+    foto
 =====================================*/
 APP.post('/ingresar', (request, response)=>{
+    
+    let medicoBody = infoBody(request.body);
 
-    Rol.findOne({'nombre' : "MED_ROLE"}, (error, rolEncontrado) =>{
+    if(!under_score.isEmpty(medicoBody)){
 
-        if(error){
-            return response.status(500).json({
-                ok : false,
-                mensaje : 'Error en el servidor',
-                errores : error
-            });
-        }
-        if(!rolEncontrado){
-            return response.status(400).json({
-                ok : false,
-                mensaje : 'No se ha encontrado el rol para el médico',
-                errores : error
-            });
-        }
-        
-        let medicoBody = infoBody(request.body);
-        medicoBody.password = BCRYPT.hashSync(medicoBody.password, 10);
-        medicoBody.external_id = UUID();
-        medicoBody.estado = true;
-        medicoBody.created_At = new Date();
-        medicoBody.updated_At = new Date();
-        medicoBody.rol = rolEncontrado.id;
-        
-        let medico = new Medico(medicoBody);  
-        /*===================================
-        Encontrar todas las especialidades solicitadas
-        Y agregarlas al médico actual
-        =====================================*/
-        let especialidades = request.body.especialidades;    
-        if(especialidades){
-             especialidades = [...new Set(especialidades)];
-        }
-
-        if(especialidades){
-            especialidades.forEach(especialidadId => {
-                Especialidad.findOne({'external_id': especialidadId}, (error, especialidadEncontrada) =>{
-                    if(error){
-                        return response.status(500).json({
-                            ok : false,
-                            mensaje : 'Error en el servidor',
-                            errores : error
-                        });
-                    }
-                    if(!especialidadEncontrada){
-                        return response.status(400).json({
-                            ok : false,
-                            mensaje : 'No se ha encontrado la especialidad solicitada',
-                            errores : error
-                        });
-                    }
-                    medico.especialidades.push(especialidadEncontrada);
-                });
-            });
-        }
-
-        medico.save((error, medicoGuardado)=>{
+        Rol.findOne({'nombre' : "MED_ROLE"}, (error, rolEncontrado) =>{
+    
             if(error){
-                return response.status(400).json({
+                return response.status(500).json({
                     ok : false,
-                    mensaje : 'Error al guardar el médico',
+                    mensaje : 'Error en el servidor',
                     errores : error
                 });
             }
+            if(!rolEncontrado){
+                return response.status(400).json({
+                    ok : false,
+                    mensaje : 'No se ha encontrado el rol para el médico',
+                    errores : error
+                });
+            }
+            
+            if(medicoBody.password){
+                medicoBody.password = BCRYPT.hashSync(medicoBody.password, 10);
+            }
+            medicoBody.external_id = UUID();
+            medicoBody.estado = true;
+            medicoBody.created_At = new Date().toLocaleString();
+            medicoBody.updated_At = new Date().toLocaleString();
+            medicoBody.rol = rolEncontrado.id;
+            
+            let medico = new Medico(medicoBody);  
+            
+            let especialidades = request.body.especialidades;    
+            if(especialidades){
+                
+                especialidades = [...new Set(especialidades)];
+                /*===================================
+                Encontrar todas las especialidades solicitadas
+                Y agregarlas al médico actual
+                =====================================*/
+                especialidades.forEach(especialidadId => {
+                    Especialidad.findOne({'external_id': especialidadId}, (error, especialidadEncontrada) =>{
+                        if(error){
+                            return response.status(500).json({
+                                ok : false,
+                                mensaje : 'Error en el servidor',
+                                errores : error
+                            });
+                        }
+                        if(!especialidadEncontrada){
+                            return response.status(400).json({
+                                ok : false,
+                                mensaje : 'No se ha encontrado la especialidad solicitada',
+                                errores : error
+                            });
+                        }
+                        medico.especialidades.push(especialidadEncontrada);
+                    });
+                });
+            }
+    
+            medico.save((error, medicoGuardado)=>{
+                if(error){
+                    return response.status(400).json({
+                        ok : false,
+                        mensaje : 'Error al guardar el médico',
+                        errores : error
+                    });
+                }
+                response.status(201).json({
+                    ok : true,
+                    medicoGuardado
+                });
+            }); 
+        });
 
-            response.status(201).json({
-                ok : true,
-                medicoGuardado
-            });
-        }); 
-    });
+    }else{
+        return response.status(400).json({
+            ok : false,
+            mensaje : 'No hay información para ingresar',
+            errores : error
+        });
+    }
 });
 
 /*===================================
-Modificar una persona existente.
+Modificar un  médico existente.
 external_id del médico a modificar.
 campos a modificar:
     nombres, apellidos, edad, género
     teléfono, dirección, password, 
-    fotos, citas, diarias, sueldo.
+    fotos, citas, diarias, sueldo, foto.
 =====================================*/
 APP.put('/modificar/:external_id', (request, response) => {
 
@@ -175,93 +192,22 @@ APP.put('/modificar/:external_id', (request, response) => {
         }
         let medicoBody = request.body;
 
-        medicoEncontrado.nombres = medicoBody.nombres || medicoEncontrado.nombres;
-        medicoEncontrado.apellidos = medicoBody.apellidos || medicoEncontrado.apellidos;
-        medicoEncontrado.edad = medicoBody.edad || medicoEncontrado.edad;
-        medicoEncontrado,genero = medicoBody.genero || medicoEncontrado.genero;
-        medicoEncontrado.telefono = medicoBody.telefono || medicoEncontrado.telefono;
-        medicoEncontrado.direccion = medicoBody.direccion || medicoEncontrado.direccion;
-        if(medicoBody.password){
-            medicoEncontrado.password = BCRYPT.hashSync(medicoBody.password, 10);
-        }
-        medicoEncontrado.foto = medicoBody.foto || medicoEncontrado.foto;
-        medicoEncontrado.citasDiarias = medicoBody.citasDiarias || medicoEncontrado.citasDiarias;
-        medicoEncontrado.sueldo = medicoBody.sueldo || medicoEncontrado.sueldo;
-        medicoEncontrado.updated_At = new Date();
-
-        medicoEncontrado.save((error, medicoGuardado)=>{
-            if(error){
-                return response.status(400).json({
-                    ok : false,
-                    mensaje : 'Error al guardar el médico',
-                    errores : error
-                });
+        if(!under_score.isEmpty(medicoBody)){
+            
+            medicoEncontrado.nombres = medicoBody.nombres || medicoEncontrado.nombres;
+            medicoEncontrado.apellidos = medicoBody.apellidos || medicoEncontrado.apellidos;
+            medicoEncontrado.edad = medicoBody.edad || medicoEncontrado.edad;
+            medicoEncontrado,genero = medicoBody.genero || medicoEncontrado.genero;
+            medicoEncontrado.telefono = medicoBody.telefono || medicoEncontrado.telefono;
+            medicoEncontrado.direccion = medicoBody.direccion || medicoEncontrado.direccion;
+            if(medicoBody.password){
+                medicoEncontrado.password = BCRYPT.hashSync(medicoBody.password, 10);
             }
-
-            response.status(201).json({
-                ok : true,
-                medicoGuardado
-            });
-        }); 
-    });
-});
-
-
-/*===================================
-Agregar especialidad al médico
-external_id del médico a agregar especialidad
-params:
-    Arreglo de external_id de las especialidades
-    a agregar
-=====================================*/
-APP.put('/agregarEspecialidad/:external_id', (request, response) => {
-
-    let external_id = request.params.external_id;
-
-    Medico.findOne({'external_id' : external_id, 'estado' : true}, (error, medicoEncontrado) =>{
-
-        if(error){
-            return response.status(500).json({
-                ok : false,
-                mensaje : 'Error en el servidor',
-                errores : error
-            });
-        }
-        if(!medicoEncontrado){
-            return response.status(400).json({
-                ok : false,
-                mensaje : 'No se ha encontrado el médico',
-                errores : error
-            });
-        }
-        let especialidades = request.body.especialidades; 
-
-        if(especialidades){
-            especialidades = [...new Set(especialidades)];
-        }
-
-        if(especialidades){
-            especialidades.forEach(especialidadId => {
-                Especialidad.findOne({'external_id': especialidadId}, (error, especialidadEncontrada) =>{
-                    if(error){
-                        return response.status(500).json({
-                            ok : false,
-                            mensaje : 'Error en el servidor',
-                            errores : error
-                        });
-                    }
-                    if(!especialidadEncontrada){
-                        return response.status(400).json({
-                            ok : false,
-                            mensaje : 'No se ha encontrado la especialidad solicitada',
-                            errores : error
-                        });
-                    }
-                   if( !medicoEncontrado.especialidades.includes(especialidadEncontrada.id)){
-                        medicoEncontrado.especialidades.push(especialidadEncontrada);
-                    }
-                });
-            });
+            medicoEncontrado.foto = medicoBody.foto || medicoEncontrado.foto;
+            medicoEncontrado.citasDiarias = medicoBody.citasDiarias || medicoEncontrado.citasDiarias;
+            medicoEncontrado.sueldo = medicoBody.sueldo || medicoEncontrado.sueldo;
+            medicoEncontrado.updated_At = new Date().toLocaleString();
+    
             medicoEncontrado.save((error, medicoGuardado)=>{
                 if(error){
                     return response.status(400).json({
@@ -271,32 +217,109 @@ APP.put('/agregarEspecialidad/:external_id', (request, response) => {
                     });
                 }
     
-                response.status(201).json({
+                response.status(200).json({
                     ok : true,
                     medicoGuardado
                 });
             }); 
         }else{
-            return response.status(402).json({
+            return response.status(400).json({
                 ok : false,
-                mensaje : 'Se requiere una especialidad para agregar'
+                mensaje : 'No hay nada que modificar'
             });
         }
-
     });
+});
+
+
+/*===================================
+Agregar especialidad al médico
+external_id del médico a agregar especialidad
+params:
+    especialidad : external_id de la especialidad
+=====================================*/
+APP.put('/agregarEspecialidad/:external_id', (request, response) => {
+
+    let external_id = request.params.external_id;
+
+    let especialidadNueva = request.body.especialidad;
+
+    if(especialidadNueva){
+
+        Medico.findOne({'external_id' : external_id, 'estado' : true}, (error, medicoEncontrado) =>{
+    
+            if(error){
+                return response.status(500).json({
+                    ok : false,
+                    mensaje : 'Error en el servidor',
+                    errores : error
+                });
+            }
+            if(!medicoEncontrado){
+                return response.status(400).json({
+                    ok : false,
+                    mensaje : 'No se ha encontrado el médico',
+                    errores : error
+                });
+            }
+            Especialidad.findOne({'external_id': especialidadNueva}, (error, especialidadEncontrada) =>{
+                if(error){
+                    return response.status(500).json({
+                        ok : false,
+                        mensaje : 'Error en el servidor',
+                        errores : error
+                    });
+                }
+                if(!especialidadEncontrada){
+                    return response.status(400).json({
+                        ok : false,
+                        mensaje : 'No se ha encontrado la especialidad solicitada'
+                    });
+                }
+                if( !medicoEncontrado.especialidades.includes(especialidadEncontrada.id)){
+                    medicoEncontrado.especialidades.push(especialidadEncontrada);
+                    medicoEncontrado.save((error, medicoGuardado)=>{
+                        if(error){
+                            return response.status(400).json({
+                                ok : false,
+                                mensaje : 'Error al guardar el médico',
+                            });
+                        }
+            
+                        response.status(201).json({
+                            ok : true,
+                            medicoGuardado
+                        });
+                    }); 
+                }else{
+                    return response.status(400).json({
+                        ok : false,
+                        mensaje : 'El médico ya cuenta con esa especialidad',
+                    });
+                }
+            });
+        });
+    }else{
+        return response.status(400).json({
+            ok : false,
+            mensaje : 'Se requiere una especialidad para agregar'
+        });
+    }
 });
 
 
 /*===================================
 Eliminar especialidad al médico
 external_id del médico a eliminar especialidad
+params: 
+    especialidad : external_id de la especialidad
 =====================================*/
 APP.put('/eliminarEspecialidad/:external_id', (request, response) => {
 
     let especialidadToDelete = request.body.especialidad; 
 
     if(!especialidadToDelete){
-        return response.status(402).json({
+        return response.status(400).json({
             ok : false,
             mensaje : 'Se requiere una especialidad para eliminar'
         });
@@ -319,12 +342,26 @@ APP.put('/eliminarEspecialidad/:external_id', (request, response) => {
                 }
 
                 if(!medico.especialidades || medico.especialidades.length === 0){
-                    return response.status(402).json({
+                    return response.status(400).json({
                         ok:false,
                         mensaje : 'El médico aún no tiene especialidad asignada.'
                     });
                 }
 
+                let existeEspecialidad = false;
+
+                medico.especialidades.forEach(especialidad => {
+                    if(especialidad.external_id === especialidadToDelete){
+                        existeEspecialidad = true;
+                    }
+                });
+
+                if(!existeEspecialidad){
+                    return response.status(400).json({
+                        ok:false,
+                        mensaje : 'El médico no tiene asignada esa especialidad.'
+                    });
+                }
                 let especialidadesActualizadas = medico.especialidades
                                                 .filter(especialidad =>  especialidad.external_id !== especialidadToDelete);
 
@@ -333,7 +370,6 @@ APP.put('/eliminarEspecialidad/:external_id', (request, response) => {
                 especialidadesActualizadas.forEach(especialidad =>{
                     medico.especialidades.push(especialidad);
                 });
-                
 
                 medico.save((error, medicoGuardado)=>{
                     if(error){
@@ -344,7 +380,7 @@ APP.put('/eliminarEspecialidad/:external_id', (request, response) => {
                         });
                     }
 
-                    response.status(201).json({
+                    response.status(200).json({
                         ok : true,
                         medicoGuardado
                     });
@@ -379,7 +415,7 @@ APP.put('/eliminar/:external_id', (request, response) => {
             });
         }
         
-        medicoEncontrado.updated_At = new Date();
+        medicoEncontrado.updated_At = new Date().toLocaleString();
         medicoEncontrado.estado = false;
 
         medicoEncontrado.save((error, medicoEliminado) => {

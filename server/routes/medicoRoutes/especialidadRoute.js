@@ -40,15 +40,22 @@ Params:
 APP.post('/ingresar', (request, response)=>{
 
     let especialidadBody = infoBody(request.body);
+
+    if(under_score.isEmpty(especialidadBody)){
+        return response.status(400).json({
+            ok : false,
+            mensaje : "Se necesita la información de la especialidad"
+        });
+    }
     
     especialidadBody.external_id = UUID();
-    especialidadBody.created_At = new Date();
-    especialidadBody.updated_At = new Date();
+    especialidadBody.created_At = new Date().toLocaleString();
+    especialidadBody.updated_At = new Date().toLocaleString();
     especialidadBody.estado = true;
 
     let especialidad = new Especialidad(especialidadBody); 
 
-    especialidad.save((error, rolGuardado)=>{
+    especialidad.save((error, especialidadGuardada)=>{
         if(error){
             return response.status(400).json({
                 ok : false,
@@ -58,7 +65,7 @@ APP.post('/ingresar', (request, response)=>{
         }
         response.status(201).json({
             ok : true,
-            rolGuardado
+            rolGuardado: especialidadGuardada
         });
     });
 });
@@ -91,12 +98,19 @@ APP.put('/modificar/:external_id', (request, response) => {
         }
 
         let especialidadActualizada = infoBody(request.body);
-       
-        especialidadActualizada.updated_At = new Date();
 
-        Especialidad.findByIdAndUpdate(especialidadEncontrada.id, especialidadActualizada, {new: true,
-                                                        runValidators : true}, 
-                                                        (error, especialidadModificada) => {
+        if(under_score.isEmpty(especialidadActualizada)){
+            return response.status(400).json({
+                ok : false,
+                mensaje : "Se necesita información de la especialidad para modificar"
+            });
+        }
+        
+        especialidadEncontrada.nombre = especialidadActualizada.nombre || especialidadEncontrada.nombre;
+        especialidadEncontrada.descripcion = especialidadActualizada.descripcion || especialidadEncontrada.descripcion;
+        especialidadEncontrada.updated_At = new Date().toLocaleString();
+
+        especialidadEncontrada.save((error, especialidadModificada) => {
             if(error){
                 return response.status(408).json({
                     ok : false,
@@ -139,7 +153,7 @@ APP.put('/eliminar/:external_id', (request, response) => {
             });
         }
 
-        especialidadEncontrada.updated_At = new Date();
+        especialidadEncontrada.updated_At = new Date().toLocaleString();
         especialidadEncontrada.estado = false;
 
         especialidadEncontrada.save((error, especialidadEliminada) => {
@@ -159,12 +173,9 @@ APP.put('/eliminar/:external_id', (request, response) => {
     });
 });
 
-
-/*===================================
-=====================================
-Sección de métodos auxiliares
-===================================.
-=====================================*/
+/******************************************************************************************************
+                                    Métodos Auxiliares
+*******************************************************************************************************/        
 let infoBody = (body) => {
     
     return under_score.pick(body, 

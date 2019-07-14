@@ -18,6 +18,7 @@ los pagos activos
 APP.get('/listar', (request, response)=>{
 
     Pago.find({'estado' : true})
+            .populate('persona')
             .exec((error, pagosList) => {
 
                 if(error){
@@ -34,70 +35,6 @@ APP.get('/listar', (request, response)=>{
             });
 });
 
-/*===================================
-Ingresar un nuevo Pago de una persona 
-external_id de la persona
-Params:
-    -cantidad 
-    -tipo
-=====================================*/
-APP.post('/ingresar/:external_id', (request, response)=>{
-
-    let external_id = request.params.external_id;
-
-    Usuario.findOne({'external_id' : external_id, "estado" : true }, (error, personaEncontrada) =>{
-
-        if(error){
-            return response.status(500).json({
-                ok : false,
-                mensaje : 'Error en el servidor',
-                errores : error
-            });
-        }
-        if(!personaEncontrada){
-            return response.status(400).json({
-                ok : false,
-                mensaje : 'No se ha encontrado la persona',
-                errores : error
-            });
-        }
-    
-        let pagoBody = infoBody(request.body);
- 
-        pagoBody.external_id = UUID();
-        pagoBody.estado = true;
-        pagoBody.created_At = new Date();
-        pagoBody.updated_At = new Date();
-        pagoBody.persona = personaEncontrada.id;
-
-        let pago = new Pago(pagoBody);  
-
-        pago.save((error, pagoGuardado)=>{
-            if(error){
-                return response.status(400).json({
-                    ok : false,
-                    mensaje : 'Error al guardar el pago',
-                    errores : error
-                });
-            }
-
-            personaEncontrada.pagos.push(pago);
-            personaEncontrada.save((error)=>{
-                if(error){
-                    return response.status(400).json({
-                        ok : false,
-                        mensaje : 'Error al agregar el pago a la persona',
-                        errores : error
-                    });
-                }
-                response.status(201).json({
-                    ok : true,
-                    pagoGuardado
-                });
-            });
-        });
-    });
-});
 
 /*===================================
 Modificar un pago de determinada persona.
@@ -129,7 +66,7 @@ APP.put('/modificar/:external_id', (request, response) => {
 
         let pagoActualizado = infoBody(request.body);
        
-        pagoActualizado.updated_At = new Date();
+        pagoActualizado.updated_At = new Date().toLocaleString();
 
         Pago.findByIdAndUpdate(pagoEncontrado.id, pagoActualizado, {new: true,
                                                         runValidators : true}, 
@@ -176,7 +113,7 @@ APP.put('/eliminar/:external_id', (request, response) => {
             });
         }
 
-        pagoEncontrado.updated_At = new Date();
+        pagoEncontrado.updated_At = new Date().toLocaleString();
         pagoEncontrado.estado = false;
 
         pagoEncontrado.save((error, pagoEliminado) => {
@@ -197,11 +134,9 @@ APP.put('/eliminar/:external_id', (request, response) => {
 });
 
 
-/*===================================
-=====================================
-Sección de métodos auxiliares
-===================================.
-=====================================*/
+/******************************************************************************************************
+                                                Métodos Auxiliares
+*******************************************************************************************************/    
 let infoBody = (body) => {
     
     return under_score.pick(body, 
