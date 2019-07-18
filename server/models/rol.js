@@ -3,11 +3,17 @@ let mongoose = require('mongoose');
 
 let Schema = mongoose.Schema;
 
+const NOMBRES_VALIDOS = {
+    values : ['ADMIN_ROLE', 'MED_ROLE', 'USER_ROLE'],
+    message : '{VALUE} no es un nombre válido'
+}
+
 let rolSchema = new Schema({
     nombre : {
         type : String,
         required : [true, 'Nombre del rol necesario'],
-        unique : true
+        unique : true,
+        enum : NOMBRES_VALIDOS
     },
     external_id : {
         type : String,

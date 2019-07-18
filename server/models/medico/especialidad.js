@@ -17,6 +17,10 @@ let especialidadShema = new Schema({
         type : Boolean,
         required : [true, 'Se requiere el estado']
     },
+    precioConsulta : {
+        type : Number,
+        required : [true, 'Se requiere un precio de consulta de acuerdo a la Esspecialidad']
+    },
     descripcion : {
         type : String,
         required : [true, 'La descripción es necesaria']

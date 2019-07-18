@@ -6,21 +6,16 @@ let unique_validator = require('mongoose-unique-validator');
 let Schema = mongoose.Schema;
 
 const TIPOS_VALIDOS = {
-    values : ['Transacción', 'Efectivo'],
+    values : ['Transaccion', 'Efectivo'],
     message : '{VALUE} no es un tipo válido'
 }
 
 let pagoSchema = new Schema({
-    
     external_id : {
         type : String,
         required : [true, 'El external es necesario'],
         unique : true
-    },
-    estado : {
-        type : Boolean,
-        required : [true, 'Se requiere el estado']
-    },
+    },  
     tipo :  {
         type : String,
         required : [true, 'Se requiere un tipo de pago'],

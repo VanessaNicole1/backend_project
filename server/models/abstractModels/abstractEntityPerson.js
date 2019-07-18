@@ -10,7 +10,6 @@ let AbstractEntityPerson = function(){
     Schema.apply(this, arguments);
 
     this.add({
-    
         external_id : {
             type : String,
             required : true
@@ -67,11 +66,11 @@ let AbstractEntityPerson = function(){
             ref : 'Rol' 
         },       
         created_At : {
-            type : String,
+            type : Date,
             required : [true, 'El created_At es requerido']
         },
         updated_At : {
-            type : String,
+            type : Date,
             required : [true, 'El updated_At es requerido']
         }
     });

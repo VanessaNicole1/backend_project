@@ -1,13 +1,17 @@
-/*Server Express*/
+/*===================================
+Libraries
+=====================================*/
 let express =  require('express');
-/*PERSON MODEL*/
-let Usuario = require('../models/usuario');
-/*PAGO MODEL*/
-let Pago = require('../models/pago');
-/*UUID*/
-const UUID = require('uuid/v1');
-/*Underscore*/
 let under_score = require('underscore');
+/*===================================
+Models
+=====================================*/
+let Pago = require('../models/pago');
+/*===================================
+Own
+=====================================*/
+let helpers = require("../helpers/functions");
+
 
 const APP  = express();
 
@@ -19,22 +23,39 @@ APP.get('/listar', (request, response)=>{
 
     Pago.find({'estado' : true})
             .populate('persona')
-            .exec((error, pagosList) => {
+            .exec((error, pagos) => {
 
                 if(error){
-                    return response.status(500).json({
-                        ok : false,
-                        mensaje : 'Error al obtener la lista de pagos',
-                        errores : error
-                    });
+                    helpers.errorMessage(response, 500, 'Error al obtener la lista de pagos', error);
                 }
-                response.status(200).json({
-                    ok : true,
-                    pagos : pagosList
-                });
+                helpers.successMessage(response, 200, pagos);
             });
 });
 
+/*====================================
+Listar pagos dependiendo del tipo que envien     
+params:
+    tipo : string                            
+======================================*/
+APP.get('/listarPagosTipo', (request, response) => {
+
+
+    let tipo = request.body.tipo;
+
+    Pago.find({ 'estado': true, 'tipo': tipo })
+        .populate('persona')
+        .exec((error, pagos) => {
+
+            if (error) {
+                helpers.errorMessage(response, 500, 'Error al extraer lista de pagos de un tipo en especial', error);
+            }
+            helpers.successMessage(response, 200, pagos);
+        });
+});
+
+/******************************************************************************************************
+POR VERIFICAR MÉTODOS
+*******************************************************************************************************/
 
 /*===================================
 Modificar un pago de determinada persona.
@@ -50,39 +71,23 @@ APP.put('/modificar/:external_id', (request, response) => {
     Pago.findOne({'external_id' : external_id}, (error, pagoEncontrado) =>{
 
         if(error){
-            return response.status(500).json({
-                ok : false,
-                mensaje : 'Error en el servidor',
-                errores : error
-            });
+            helpers.errorMessage(response, 500, 'Error en el servidor', error);
         }
         if(!pagoEncontrado){
-            return response.status(400).json({
-                ok : false,
-                mensaje : 'No se ha encontrado el pago de la persona',
-                errores : error
-            });
+            helpers.errorMessage(response, 400,'No se ha encontrado el pago de la persona');
         }
 
         let pagoActualizado = infoBody(request.body);
        
-        pagoActualizado.updated_At = new Date().toLocaleString();
+        pagoActualizado.updated_At = new Date();
 
         Pago.findByIdAndUpdate(pagoEncontrado.id, pagoActualizado, {new: true,
                                                         runValidators : true}, 
                                                         (error, pagoModificado) => {
             if(error){
-                return response.status(408).json({
-                    ok : false,
-                    mensaje : 'Error al modificar el pago de la persona',
-                    errores : error
-                });
+                helpers.errorMessage(response, 500, 'Error al modificar el pago de la persona', error);
             }
-
-            response.status(200).json({
-                ok : true,
-                pagoModificado
-            });
+            helpers.successMessage(response, 200, pagoModificado);
         });
     });
 });
@@ -99,40 +104,23 @@ APP.put('/eliminar/:external_id', (request, response) => {
     Pago.findOne({'external_id' : external_id}, (error, pagoEncontrado) =>{
 
         if(error){
-            return response.status(500).json({
-                ok : false,
-                mensaje : 'Error en el servidor',
-                errores : error
-            });
+            helpers.errorMessage(response, 500, 'Error en el servidor', error);
         }
         if(!pagoEncontrado){
-            return response.status(400).json({
-                ok : false,
-                mensaje : 'No se ha encontrado el pago de la persona',
-                errores : error
-            });
+            helpers.errorMessage(response, 400,'No se ha encontrado el pago de la persona');
         }
 
-        pagoEncontrado.updated_At = new Date().toLocaleString();
+        pagoEncontrado.updated_At = new Date();
         pagoEncontrado.estado = false;
 
         pagoEncontrado.save((error, pagoEliminado) => {
             if(error){
-                return response.status(408).json({
-                    ok : false,
-                    mensaje : 'Error al eliminar el pago de la persona',
-                    errores : error
-                });
+                helpers.errorMessage(response, 500, 'Error al eliminar el pago de la persona', error);
             }
-
-            response.status(200).json({
-                ok : true,
-                pagoEliminado
-            });
+            helpers.successMessage(response, 200, pagoEliminado);
         });
     });
 });
-
 
 /******************************************************************************************************
                                                 Métodos Auxiliares

@@ -1,36 +1,58 @@
 /*Mongoose*/
-let mongoose = require('mongoose');
+let moongose = require('mongoose');
 
-let Schema = mongoose.Schema;
+let Schema = moongose.Schema;
 
 let consultaSchema = new Schema({
-    external_id : {
-        type : String,
-        required : true 
+    external_id: {
+        type: String,
+        required: true
     },
-    diagnostico : {
-        type : String,
-        required : [true, 'Se necesita el diagnostico']
+    diagnostico: {
+        type: String,
+        required: [true, 'Se requiere el diagnóstico']
     },
-    fecha : {
-        
+    fecha: {
+        type: Date,
+        required: [true, 'Se requiere la fecha de la consulta']
     },
-    habitos : {
-        type : String,
-        required : [true, 'Se necesita los hábitos de la persona']
-    },
-    persona : {
-            type: Schema.Types.ObjectId,
-            ref : 'Usuario' 
-    },   
-    created_At : {
+    hora : {
         type : Date,
-        required : [true, 'El created_At es requerido']
+        required : [true, 'Se requiere la hora de consulta']
     },
-    updated_At : {
-        type : Date,
-        required : [true, 'El updated_At es requerido']
+    motivo: {
+        type: String,
+        required: [true, 'Se requiere el motivo de la consulta']
+    },
+    estado: {
+        type: Boolean,
+        required: [true, 'Se requiere el estado de la conuslta']
+    },
+    precioConsulta: {
+        type: Number,
+        required: [true, 'Se requiere el precio de la consulta']
+    },
+    historia: {
+        type: Schema.Types.ObjectId,
+        ref: 'Historial'
+    },
+    medico: {
+        type: Schema.Types.ObjectId,
+        ref: 'Medico'
+    },
+    receta : {
+        type: Schema.Types.ObjectId,
+        ref: 'Receta'
+    },
+    createdAt: {
+        type: Date,
+        required: [true, 'El createdAt es requerido']
+    },
+    updatedAt: {
+        type: Date,
+        required: [true, 'El updatedAt es requerido']
     }
 });
 
-module.exports = mongoose.model('Rol', historiaSchema);
+
+module.exports = moongose.model('Consulta', consultaSchema);

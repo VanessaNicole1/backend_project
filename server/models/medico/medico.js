@@ -1,8 +1,12 @@
-/*Mongoose*/
+/*===================================
+Libraries
+=====================================*/
 let mongoose = require('mongoose');
-/*Unique-validator*/
 let unique_validator = require('mongoose-unique-validator');
-/*AbstractEntityPerson import*/
+
+/*===================================
+Models
+=====================================*/
 let AbstractEntityPerson = require('../abstractModels/abstractEntityPerson');
 
 let Schema = mongoose.Schema;
@@ -27,9 +31,14 @@ medicoSchema.add({
             type: Schema.Types.ObjectId,
             ref : 'Especialidad' 
         }
+    ],
+    consultas : [
+        {
+            type: Schema.Types.ObjectId,
+            ref : 'Consulta' 
+        }
     ]
 });
-
 
 medicoSchema.plugin(unique_validator, {message :  '{PATH} debe de ser único'});
 

@@ -1,8 +1,11 @@
-/*Mongoose*/
+/*===================================
+Libraries
+=====================================*/
 let mongoose = require('mongoose');
-/*Unique-validator*/
 let unique_validator = require('mongoose-unique-validator');
-/*AbstractEntityPerson import*/
+/*===================================
+Models
+=====================================*/
 let AbstractEntityPerson = require('./abstractModels/abstractEntityPerson');
 
 let Schema = mongoose.Schema;
@@ -14,9 +17,12 @@ usuarioSchema.add({
             type: Schema.Types.ObjectId,
             ref : 'Pago' 
         }
-    ]
-}
-);
+    ],
+    historia : {
+        type: Schema.Types.ObjectId,
+        ref : 'Historia' 
+    }
+});
 
 usuarioSchema.plugin(unique_validator, {message :  '{PATH} debe de ser único'});
 

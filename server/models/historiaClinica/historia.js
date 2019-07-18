@@ -21,9 +21,23 @@ let historialSchema = new Schema({
         required : [true, 'Se necesita los hábitos de la persona']
     },
     persona : {
+        type: Schema.Types.ObjectId,
+        ref : 'Usuario' 
+    },
+    medico : {
+        type: Schema.Types.ObjectId,
+        ref : 'Medico' 
+    },
+    consultas : [
+        {
             type: Schema.Types.ObjectId,
-            ref : 'Usuario' 
-    },   
+            ref : 'Consulta' 
+        }
+    ],  
+    estado : {
+        type : Boolean, 
+        required : true
+    },
     created_At : {
         type : Date,
         required : [true, 'El created_At es requerido']
@@ -34,4 +48,4 @@ let historialSchema = new Schema({
     }
 });
 
-module.exports = mongoose.model('Rol', historiaSchema);
+module.exports = mongoose.model('Historia', historialSchema);

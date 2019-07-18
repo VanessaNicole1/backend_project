@@ -1,32 +1,33 @@
-/*Server Express*/
+/*===================================
+Libraries
+=====================================*/
 let express =  require('express');
-/*ROL MODEL*/
-let Rol = require('../models/rol');
-/*UUID*/
 const UUID = require('uuid/v1');
+/*===================================
+Models
+=====================================*/
+let Rol = require('../models/rol');
 
 const APP  = express();
 
+/*===================================
+Obtener la lista de roles
+=====================================*/
 APP.get('/', (request, response)=>{
 
-    Rol.find({}).exec((error, rolsResponse) =>{
+    Rol.find({}).exec((error, roles) =>{
             if(error){
-                return response.status(500).json({
-                    ok : false,
-                    mensaje : 'Error al obtener la lista de roles',
-                    errores : error
-                });
+                helpers.errorMessage(response, 500, 'Error al obtener la lista de roles', error);
             }
-            response.status(200).json({
-                ok : true,
-                roles : rolsResponse
-            });
+            helpers.successMessage(response, 200, roles);
         });
-
 });
 
-
-
+/*===================================
+Crear rol
+params:
+    nombreRol
+=====================================*/
 APP.post('/', (request, response)=>{
 
     let body = request.body;
@@ -41,16 +42,9 @@ APP.post('/', (request, response)=>{
 
     rol.save((error, rolGuardado)=>{
         if(error){
-            return response.status(400).json({
-                ok : false,
-                mensaje : 'Error al crear el rol',
-                errores : error
-            });
+            helpers.errorMessage(response, 500, 'Error al crear rol', error);
         }
-        response.status(201).json({
-            ok : true,
-            rolGuardado
-        });
+        helpers.successMessage(response, 201, rolGuardado);
     });
 });
 

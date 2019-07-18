@@ -1,14 +1,19 @@
-/*Server Express*/
+/*===================================
+Libraries
+=====================================*/
 let express =  require('express');
-/*Especialidad MODEL*/
-let Especialidad = require('../../models/medico/especialidad');
-/*UUID*/
-const UUID = require('uuid/v1');
-/*Underscore*/
 let under_score = require('underscore');
+const UUID = require('uuid/v1');
+/*===================================
+Models
+=====================================*/
+let Especialidad = require('../../models/medico/especialidad');
+/*===================================
+Own
+=====================================*/
+let helpers = require("../../helpers/functions");
 
 const APP  = express();
-
 /*===================================
 Obtener toda la lista de las especialidades
 del hospital
@@ -16,18 +21,11 @@ del hospital
 APP.get('/listar', (request, response)=>{
 
     Especialidad.find({'estado' : true})
-            .exec((error, especialidadesList) => {
+            .exec((error, especialidades) => {
                 if(error){
-                    return response.status(500).json({
-                        ok : false,
-                        mensaje : 'Error al obtener la lista de especialidades',
-                        errores : error
-                    });
+                    helpers.errorMessage(response, 500, 'Error al obtener la lista de especialidades', error);
                 }
-                response.status(200).json({
-                    ok : true,
-                    especialidades : especialidadesList
-                });
+                helpers.successMessage(response, 200, especialidades);
             });
 });
 
@@ -42,31 +40,21 @@ APP.post('/ingresar', (request, response)=>{
     let especialidadBody = infoBody(request.body);
 
     if(under_score.isEmpty(especialidadBody)){
-        return response.status(400).json({
-            ok : false,
-            mensaje : "Se necesita la información de la especialidad"
-        });
+        helpers.errorMessage(response, 400,"Se necesita la información de la especialidad");
     }
     
     especialidadBody.external_id = UUID();
-    especialidadBody.created_At = new Date().toLocaleString();
-    especialidadBody.updated_At = new Date().toLocaleString();
+    especialidadBody.created_At = new Date();
+    especialidadBody.updated_At = new Date();
     especialidadBody.estado = true;
 
     let especialidad = new Especialidad(especialidadBody); 
 
     especialidad.save((error, especialidadGuardada)=>{
         if(error){
-            return response.status(400).json({
-                ok : false,
-                mensaje : 'Error al crear la especialidad',
-                errores : error
-            });
+            helpers.errorMessage(response, 500, 'Error al crear la especialidad', error);
         }
-        response.status(201).json({
-            ok : true,
-            rolGuardado: especialidadGuardada
-        });
+        helpers.successMessage(response, 201, especialidadGuardada);
     });
 });
 
@@ -83,46 +71,28 @@ APP.put('/modificar/:external_id', (request, response) => {
     Especialidad.findOne({'external_id' : external_id}, (error, especialidadEncontrada) =>{
 
         if(error){
-            return response.status(500).json({
-                ok : false,
-                mensaje : 'Error en el servidor',
-                errores : error
-            });
+            helpers.errorMessage(response, 500, 'Error en el servidor', error);
         }
         if(!especialidadEncontrada){
-            return response.status(400).json({
-                ok : false,
-                mensaje : 'No se ha encontrado ninguna especialidad',
-                errores : error
-            });
+            helpers.errorMessage(response, 400,'No se ha encontrado ninguna especialidad');
         }
 
         let especialidadActualizada = infoBody(request.body);
 
         if(under_score.isEmpty(especialidadActualizada)){
-            return response.status(400).json({
-                ok : false,
-                mensaje : "Se necesita información de la especialidad para modificar"
-            });
+            helpers.errorMessage(response, 400,"Se necesita información de la especialidad para modificar");
         }
         
         especialidadEncontrada.nombre = especialidadActualizada.nombre || especialidadEncontrada.nombre;
         especialidadEncontrada.descripcion = especialidadActualizada.descripcion || especialidadEncontrada.descripcion;
-        especialidadEncontrada.updated_At = new Date().toLocaleString();
+        especialidadEncontrada.updated_At = new Date();
 
         especialidadEncontrada.save((error, especialidadModificada) => {
             if(error){
-                return response.status(408).json({
-                    ok : false,
-                    mensaje : 'Error al modificar la especialidad',
-                    errores : error
-                });
+                helpers.errorMessage(response, 500, 'Error al modificar la especialidad', error);
             }
 
-            response.status(200).json({
-                ok : true,
-                especialidadModificada
-            });
+            helpers.successMessage(response, 200, especialidadModificada);
         });
     });
 });
@@ -139,36 +109,20 @@ APP.put('/eliminar/:external_id', (request, response) => {
     Especialidad.findOne({'external_id' : external_id, 'estado' : true}, (error, especialidadEncontrada) =>{
 
         if(error){
-            return response.status(500).json({
-                ok : false,
-                mensaje : 'Error en el servidor',
-                errores : error
-            });
+            helpers.errorMessage(response, 500, 'Error en el servidor', error);
         }
         if(!especialidadEncontrada){
-            return response.status(400).json({
-                ok : false,
-                mensaje : 'No se ha encontrado la especialidad',
-                errores : error
-            });
+            helpers.errorMessage(response, 400,'No se ha encontrado la especialidad');
         }
 
-        especialidadEncontrada.updated_At = new Date().toLocaleString();
+        especialidadEncontrada.updated_At = new Date();
         especialidadEncontrada.estado = false;
 
         especialidadEncontrada.save((error, especialidadEliminada) => {
             if(error){
-                return response.status(408).json({
-                    ok : false,
-                    mensaje : 'Error al eliminar la especialidad',
-                    errores : error
-                });
+                helpers.errorMessage(response, 500, 'Error al eliminar la especialidad', error);
             }
-
-            response.status(200).json({
-                ok : true,
-                especialidadEliminada
-            });
+            helpers.successMessage(response, 200, especialidadEliminada);
         });
     });
 });
