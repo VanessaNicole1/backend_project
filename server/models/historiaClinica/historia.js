@@ -48,4 +48,15 @@ let historialSchema = new Schema({
     }
 });
 
+
+historialSchema.methods.toJSON = function(){
+    let historia = this;
+    let historiaObject = historia.toObject();
+    delete historiaObject.created_At;
+    delete historiaObject.updated_At;
+    delete historiaObject.estado;
+    return historiaObject;
+}
+
+
 module.exports = mongoose.model('Historia', historialSchema);

@@ -8,29 +8,38 @@ const UUID = require('uuid/v1');
 /*===================================
 Models
 =====================================*/
+let Admin = require('../models/admin');
+let Historial = require('../models/historiaClinica/historia');
+let Medico = require('../models/medico/medico');
 let Pago = require('../models/pago');
 let Rol = require('../models/rol');
 let Usuario = require('../models/usuario');
-let Medico = require('../models/medico/medico');
 /*===================================
 Own
 =====================================*/
 let helpers = require("../helpers/functions");
+let  { verifyAdmin, verifyToken, verifyUser, verifyMed, verifyAdminOrUser } = require('../middlewares/authentication');
 
+/*===================================
+Variables
+=====================================*/
 const APP  = express();
+const PAGO_PARAMS = 'cantidad tipo external_id';
+const HISTORIAL_PARAMS = 'enfermedades enfermedadesHereditarias habitos external_id'
 
 /*===================================
 Listar todos la lista de personas activas
 =====================================*/
-APP.get('/listar', (request, response)=>{
+APP.get('/listar', [verifyToken, verifyAdmin], (request, response)=>{
 
     Usuario.find({'estado' : true})
+            .select('-_id')
             .exec((error, personas) => {
 
                 if(error){
-                    helpers.errorMessage(response, 500, 'Error al obtener la lista de personas', error);
+                    return helpers.errorMessage(response, 500, 'Error al obtener la lista de personas', error);
                 }
-                helpers.successMessage(response, 200, personas);
+                return helpers.successMessage(response, 200, personas);
             });
 });
 
@@ -46,40 +55,40 @@ APP.post('/ingresar', (request, response)=>{
     
     let usuarioBody = infoBody(request.body);
     
-    if(!under_score.isEmpty(usuarioBody)){
+    if(under_score.isEmpty(usuarioBody)){
+        return helpers.errorMessage(response, 400,'Ingrese los parámetros necesarios de la persona' );
+    }
         
-        Rol.findOne({'nombre' : 'USER_ROLE'}, (error, rolEncontrado) =>{
+    Rol.findOne({'nombre' : 'USER_ROLE'}, (error, rolEncontrado) =>{
+        
+        if(error){
+            return helpers.errorMessage(response, 500, 'Error en el servidor', error);
+        }
+        if(!rolEncontrado){
+            return helpers.errorMessage(response, 400,'No se ha encontrado el rol' );
+        }
+        if(usuarioBody.password){
+            usuarioBody.password = BCRYPT.hashSync(usuarioBody.password, 10);
+        }
+        
+        usuarioBody.external_id = UUID();
+        usuarioBody.estado = true;
+        usuarioBody.created_At = new Date();
+        usuarioBody.updated_At = new Date();
+        usuarioBody.rol = rolEncontrado.id;
+        
+        let usuario = new Usuario(usuarioBody);  
+        
+        usuario.save((error, usuarioGuardado)=>{
             
             if(error){
-                helpers.errorMessage(response, 500, 'Error en el servidor', error);
-            }
-            if(!rolEncontrado){
-                helpers.errorMessage(response, 400,'No se ha encontrado el rol' );
-            }
-            if(usuarioBody.password){
-                usuarioBody.password = BCRYPT.hashSync(usuarioBody.password, 10);
+                    return helpers.errorMessage(response, 400, 'Error al guardar la persona', error);
             }
             
-            usuarioBody.external_id = UUID();
-            usuarioBody.estado = true;
-            usuarioBody.created_At = new Date();
-            usuarioBody.updated_At = new Date();
-            usuarioBody.rol = rolEncontrado.id;
-            
-            let usuario = new Usuario(usuarioBody);  
-            
-            usuario.save((error, usuarioGuardado)=>{
-               
-                if(error){
-                     helpers.errorMessage(response, 400, 'Error al guardar la persona');
-                }
-                
-                helpers.successMessage(response, 201, usuarioGuardado);
-            });
+            return helpers.successMessage(response, 201, usuarioGuardado);
         });
-    }else{
-        helpers.errorMessage(response, 400,'Ingrese los parámetros necesarios de la persona' );
-    }
+    });
+
 });
 
 /*===================================
@@ -93,42 +102,41 @@ APP.put('/modificar/:external_id', (request, response) => {
     
     let external_id = request.params.external_id;
     
+    let usuarioBody = request.body;
+    
+    if(under_score.isEmpty(usuarioBody)){
+        return helpers.errorMessage(response, 400,'No hay nada que modificar');
+    }
+
     Usuario.findOne({'external_id' : external_id, 'estado' : true }, (error, usuarioEncontrado) =>{
         
         if(error){
-            helpers.errorMessage(response, 500, 'Error en el servidor', error);
+            return helpers.errorMessage(response, 500, 'Error en el servidor', error);
         }
         if(!usuarioEncontrado){
-            helpers.errorMessage(response, 400,'No se ha encontrado la persona');
+            return helpers.errorMessage(response, 400,'No se ha encontrado la persona');
         }   
-
-        let usuarioBody = request.body;
-        
-        if(!under_score.isEmpty(usuarioBody)){
             
-            usuarioEncontrado.nombres = usuarioBody.nombres || usuarioEncontrado.nombres;
-            usuarioEncontrado.apellidos = usuarioBody.apellidos || usuarioEncontrado.apellidos;
-            usuarioEncontrado.edad = usuarioBody.edad || usuarioEncontrado.edad;
-            usuarioEncontrado.genero = usuarioBody.genero || usuarioEncontrado.genero;
-            usuarioEncontrado.telefono = usuarioBody.telefono || usuarioEncontrado.telefono;
-            usuarioEncontrado.direccion = usuarioBody.direccion || usuarioEncontrado.direccion;
-            if(usuarioBody.password){
-                usuarioEncontrado.password = BCRYPT.hashSync(usuarioBody.password, 10);
-            }
-            usuarioEncontrado.foto = usuarioBody.foto || usuarioEncontrado.foto;
-            usuarioEncontrado.updated_At = new Date();
-            
-            usuarioEncontrado.save((error, usuarioModificado) => {
-                if(error){
-                    helpers.errorMessage(response, 400, 'Error al modificar la persona');
-                }
-                helpers.successMessage(response, 200, usuarioModificado);
-            });
-        }else{
-            helpers.errorMessage(response, 400,'No hay nada que modificar');
+        usuarioEncontrado.nombres = usuarioBody.nombres || usuarioEncontrado.nombres;
+        usuarioEncontrado.apellidos = usuarioBody.apellidos || usuarioEncontrado.apellidos;
+        usuarioEncontrado.edad = usuarioBody.edad || usuarioEncontrado.edad;
+        usuarioEncontrado.genero = usuarioBody.genero || usuarioEncontrado.genero;
+        usuarioEncontrado.telefono = usuarioBody.telefono || usuarioEncontrado.telefono;
+        usuarioEncontrado.direccion = usuarioBody.direccion || usuarioEncontrado.direccion;
+        if(usuarioBody.password){
+            usuarioEncontrado.password = BCRYPT.hashSync(usuarioBody.password, 10);
         }
+        usuarioEncontrado.foto = usuarioBody.foto || usuarioEncontrado.foto;
+        usuarioEncontrado.updated_At = new Date();
+        
+        usuarioEncontrado.save((error, usuarioModificado) => {
+            if(error){
+                return helpers.errorMessage(response, 400, 'Error al modificar la persona', error);
+            }
+            return helpers.successMessage(response, 200, usuarioModificado);
+        });
+       
     });
-    
 });
 
 /*===================================
@@ -142,10 +150,10 @@ APP.put('/eliminar/:external_id', (request, response) => {
     Usuario.findOne({'external_id' : external_id, 'estado' : true}, (error, usuarioEncontrado) =>{
         
         if(error){
-            helpers.errorMessage(response, 500, 'Error en el servidor', error);
+           return helpers.errorMessage(response, 500, 'Error en el servidor', error);
         }
         if(!usuarioEncontrado){
-            helpers.errorMessage(response, 400,'No se ha encontrado la persona');
+            return helpers.errorMessage(response, 400,'No se ha encontrado la persona');
         }
         
         usuarioEncontrado.updated_At = new Date();
@@ -154,9 +162,9 @@ APP.put('/eliminar/:external_id', (request, response) => {
         usuarioEncontrado.save((error, usuarioEliminado) => {
 
             if(error){
-                helpers.errorMessage(response, 400,'Error al eliminar la persona');
+                return helpers.errorMessage(response, 400,'Error al eliminar la persona');
             }            
-            helpers.successMessage(response, 200, usuarioEliminado);
+            return helpers.successMessage(response, 200, usuarioEliminado);
         });
     });
 });
@@ -175,15 +183,15 @@ APP.get('/listarPagos/:external_id', (request, response)=>{
 
     Usuario.find({'estado' : true, 'external_id' : external_id})
             .populate({
-                path :'pagos'
+                path :'pagos',
+                select : `${PAGO_PARAMS} -_id`
             })
             .exec((error, personas) => {
 
                 if(error){
-                    helpers.errorMessage(response, 500, 'Error al obtener la lista de pagos de la persona', error);
+                   return helpers.errorMessage(response, 500, 'Error al obtener la lista de pagos de la persona', error);
                 }
-                helpers.successMessage(response, 200, personas);
-           
+                return helpers.successMessage(response, 200, personas);
             });
 });
 
@@ -201,10 +209,10 @@ APP.post('/ingresarPago/:external_id', (request, response)=>{
     Usuario.findOne({'external_id' : external_id, "estado" : true }, (error, personaEncontrada) =>{
 
         if(error){
-            helpers.errorMessage(response, 500, 'Error en el servidor', error);
+            return helpers.errorMessage(response, 500, 'Error en el servidor', error);
         }
         if(!personaEncontrada){
-            helpers.errorMessage(response, 400,'No se ha encontrado la persona');
+            return helpers.errorMessage(response, 400,'No se ha encontrado la persona');
         }
     
         let pagoBody = {
@@ -212,32 +220,30 @@ APP.post('/ingresarPago/:external_id', (request, response)=>{
             tipo : request.body.tipo
         }
 
-        if(!under_score.isEmpty(pagoBody)){
-            
-            pagoBody.external_id = UUID();
-            pagoBody.created_At = new Date();
-            pagoBody.updated_At = new Date();
-            pagoBody.persona = personaEncontrada.id;
-    
-            let pago = new Pago(pagoBody);  
-    
-            pago.save((error, pagoGuardado)=>{
-                if(error){
-                    helpers.errorMessage(response, 500,'Error al guardar el pago', error);
-                }
-    
-                personaEncontrada.pagos.push(pago);
-                personaEncontrada.save((error)=>{
-                   
-                    if(error){
-                        helpers.errorMessage(response, 400,'Error al agregar el pago a la persona');
-                    }
-                    helpers.successMessage(response, 201, pagoGuardado);
-                });
-            });
-        }else{
-            helpers.errorMessage(response, 400,'Se necesita la información del pago a guardar');
+        if(under_score.isEmpty(pagoBody)){
+            return helpers.errorMessage(response, 400,'Se necesita la información del pago a guardar');
         }
+        pagoBody.external_id = UUID();
+        pagoBody.created_At = new Date();
+        pagoBody.updated_At = new Date();
+        pagoBody.persona = personaEncontrada.id;
+
+        let pago = new Pago(pagoBody);  
+
+        pago.save((error, pagoGuardado)=>{
+            if(error){
+                return helpers.errorMessage(response, 500,'Error al guardar el pago', error);
+            }
+
+            personaEncontrada.pagos.push(pago);
+            personaEncontrada.save((error)=>{
+                
+                if(error){
+                    return helpers.errorMessage(response, 400,'Error al agregar el pago a la persona');
+                }
+                return helpers.successMessage(response, 201, pagoGuardado);
+            });
+        });
     });
 });
 
@@ -252,30 +258,28 @@ APP.get('/obtenerHistorial/:external_id', (request, response) => {
 
     let external_id = request.params.external_id;
 
-    Usuario.findOne({ 'estado': true, 'external_id': external_id }, (error, usuarioEncontrado) => {
+    Usuario.findOne({ 'estado': true, 'external_id': external_id })
+        .select('-_id -pagos -citas')
+        .populate({
+            path: 'historia',
+            select : `${HISTORIAL_PARAMS} -_id`,
+            match: { 'estado': true }
+        })
+        .exec((error, usuarioEncontrado) => {
 
-        if (error) {
-            helpers.errorMessage(response, 500, 'Error en el servidor', error);
-        }
+            if (error) {
+                return helpers.errorMessage(response, 500, 'Error al extraer el historial del usuario', error);
+            }
 
-        if (!usuarioEncontrado) {
-            helpers.errorMessage(response, 400,'No se ha encontrado la persona');
-        }
+            if(!usuarioEncontrado){
+                return helpers.errorMessage(response, 400, 'No existe el usuario');
+            }
 
-        Historial.find({ 'estado': true, 'persona': usuarioEncontrado.id })
-            .populate({
-                path: 'persona',
-                match: { 'estado': true }
-            })
-            .exec((error, historialEncontrado) => {
-
-                if (error) {
-                    helpers.errorMessage(response, 500, 'Error al extraer el historial del usuario', error);
-                }
-
-                helpers.successMessage(response, 200, historialEncontrado);
-            });
-    });
+            if(!usuarioEncontrado.historia){
+                return helpers.errorMessage(response, 400, 'La persona aún no tiene historia clínica');
+            }
+            return helpers.successMessage(response, 200, usuarioEncontrado);
+        });
 
 });
 
@@ -292,115 +296,99 @@ APP.post('/agregarHistorial/:external_id', (request, response) => {
     let body = request.body;
 
     if(under_score.isEmpty(body)){
-       helpers.errorMessage(response, 400, 'Por favor enviar la información necesaria');
+       return helpers.errorMessage(response, 400, 'Por favor enviar la información necesaria');
     }
     if(!body.medico){
-        helpers.errorMessage(response, 400,'Se necesita la información del médico que crea la historia');
+        return helpers.errorMessage(response, 400,'Se necesita la información del médico que crea la historia');
     }
     
-    Usuario.findOne({ 'estado': true, 'external_id': external_id }, (error, usuarioEncontrado) => {
-
-        if(!usuarioEncontrado.historia){
-            if (error) {
-                helpers.errorMessage(response, 500, 'Ocurrio un error en el servidor');
-            }
-    
-            if (!usuarioEncontrado) {
-                helpers.errorMessage(response, 400,'No se encontró el usuario');
-            }
-    
-            Medico.findOne({'estado' : true, 'external_id' : body.medico}, (error, medicoEncontrado) =>{
-    
-                if(!medicoEncontrado){
-                    helpers.errorMessage(response, 400,'No se encontró el médico');
-                }
-    
-                let historiaBody = {
-                    enfermedades: body.enfermedades,
-                    enfermedadesHereditarias: body.enfermedadesHereditarias,
-                    habitos: body.habitos
-                }
-        
-                historiaBody.external_id = UUID();
-                historiaBody.estado = true;
-                historiaBody.createdAt = new Date();
-                historiaBody.updatedAt = new Date();
-                historiaBody.persona = usuarioEncontrado.id;
-                historiaBody.medico = medicoEncontrado.id;
-        
-                let historia = new Historial(historiaBody);
-        
-                historia.save((error, historialGuardado) => {
-        
-                    if (error) {
-                        helpers.errorMessage(response, 400, 'Error al agregar el historial al usuario');               
-                    }
-        
-                    helpers.successMessage(response, 201, historialGuardado);
-                });
-            });
-        }else{
-            helpers.errorMessage(response, 400,'La persona ya tiene asignada una historia clínica');
-        }
-    });
-});
-
-/*====================================
-Modificar un historial clínico de un usuario existente
-required params:
-  * enfermedades, enfermedadesHereditarias, habitos                                
-======================================*/
-
-APP.put('/modificarHistorial/:external_id', (request, response) => {
-
-    let external_id = request.params.external_id;
-
     Usuario.findOne({ 'estado': true, 'external_id': external_id }, (error, usuarioEncontrado) => {
 
         if (error) {
-            helpers.errorMessage(response, 500, 'Error en el servidor', error);
+            return helpers.errorMessage(response, 500, 'Ocurrio un error en el servidor');
         }
 
         if (!usuarioEncontrado) {
-            helpers.errorMessage(response, 400,'No se ha encontrado la persona');
+            helpers.errorMessage(response, 400,'No se encontró el usuario');
         }
 
+        if(usuarioEncontrado.historia){
+            return helpers.errorMessage(response, 400,'La persona ya tiene asignada una historia clínica');
+        }
 
-        Historial.findOne({ 'estado': true, 'persona': usuarioEncontrado.id }, (error, historialEncontrado) => {
+        Medico.findOne({'estado' : true, 'external_id' : body.medico}, (error, medicoEncontrado) =>{
 
-            if (error) {
-                helpers.errorMessage(response, 500, 'Error en el servidor', error);
+            if(!medicoEncontrado){
+                return helpers.errorMessage(response, 400,'No se encontró el médico');
             }
 
-            if (!historialEncontrado) {
-                helpers.errorMessage(response, 400,'No se encontró  un historial para la persona');              
+            let historiaBody = {
+                enfermedades: body.enfermedades,
+                enfermedadesHereditarias: body.enfermedadesHereditarias,
+                habitos: body.habitos,
+                external_id : UUID(),
+                estado :  true,
+                created_At : helpers.transformarHora(new Date()),
+                updated_At : helpers.transformarHora(new Date()),
+                persona : usuarioEncontrado.id,
+                medico : medicoEncontrado.id
             }
-
-            let historialBody = request.body;
-
-            if (!under_score.isEmpty(historialBody)) {
-
-                historialEncontrado.enfermedades = historialBody.enfermedades || historialEncontrado.enfermedades;
-                historialEncontrado.enfermedadesHereditarias = historialBody.enfermedadesHereditarias || historialEncontrado.enfermedadesHereditarias;
-                historialEncontrado.habitos = historialBody.habitos || historialEncontrado.habitos;
-                historialEncontrado.updatedAt = new Date().toLocaleString();
-
-                historialEncontrado.save((error, historialmodificado) => {
-
-                    if (error) {
-                        helpers.errorMessage(response, 500, 'Error al momento de modificar el historial clínico', error);
-                    }
-
-                    helpers.successMessage(response, 200, historialmodificado);
-                });
-            } else {
-                helpers.errorMessage(response, 400,'No hay nada que  modificar');
-            }
+            
+            let historia = new Historial(historiaBody);
+    
+            historia.save((error, historialGuardado) => {
+    
+                if(error) {
+                    return helpers.errorMessage(response, 400, 'Error al agregar el historial al usuario', error);               
+                }
+                usuarioEncontrado.historia = historialGuardado.id;
+                usuarioEncontrado.save();
+                
+                return helpers.successMessage(response, 201, historialGuardado);
+            });
         });
-
     });
 });
 
+
+APP.post('/ingresarAdmin', (request, response)=>{    
+    
+    let adminBody = infoBody(request.body);
+    
+    if(under_score.isEmpty(adminBody)){
+        return helpers.errorMessage(response, 400,'Ingrese los parámetros necesarios de la persona' );
+    }
+        
+    Rol.findOne({'nombre' : 'ADMIN_ROLE'}, (error, rolEncontrado) =>{
+        
+        if(error){
+            return helpers.errorMessage(response, 500, 'Error en el servidor', error);
+        }
+        if(!rolEncontrado){
+            return helpers.errorMessage(response, 400,'No se ha encontrado el rol' );
+        }
+        if(adminBody.password){
+            adminBody.password = BCRYPT.hashSync(adminBody.password, 10);
+        }
+        
+        adminBody.external_id = UUID();
+        adminBody.estado = true;
+        adminBody.created_At = new Date();
+        adminBody.updated_At = new Date();
+        adminBody.rol = rolEncontrado.id;
+        
+        let admin = new Admin(adminBody);  
+        
+        admin.save((error, adminGuardado)=>{
+            
+            if(error){
+                    return helpers.errorMessage(response, 400, 'Error al guardar el administrador', error);
+            }
+            return helpers.successMessage(response, 201, adminGuardado);
+        });
+    });
+
+});
 
 /******************************************************************************************************
                                     Métodos Auxiliares

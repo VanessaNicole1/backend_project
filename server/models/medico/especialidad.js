@@ -1,9 +1,12 @@
-/*Mongoose*/
+/*===================================
+Libraries
+=====================================*/
 let mongoose = require('mongoose');
+let unique_validator = require('mongoose-unique-validator');
 
 let Schema = mongoose.Schema;
 
-let especialidadShema = new Schema({
+let especialidadSchema = new Schema({
     nombre : {
         type : String,
         required : [true, 'Nombre de la especialidad necesaria'],
@@ -35,4 +38,15 @@ let especialidadShema = new Schema({
     }
 });
 
-module.exports = mongoose.model('Especialidad', especialidadShema);
+especialidadSchema.plugin(unique_validator, {message :  '{PATH} debe de ser único'});
+
+especialidadSchema.methods.toJSON = function(){
+    let especialidad = this;
+    let especialidadObject = especialidad.toObject();
+    delete especialidadObject.estado;
+    delete especialidadObject.created_At;
+    delete especialidadObject.updated_At;
+    return especialidadObject;
+}
+
+module.exports = mongoose.model('Especialidad', especialidadSchema);

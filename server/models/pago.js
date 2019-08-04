@@ -41,4 +41,14 @@ let pagoSchema = new Schema({
 
 pagoSchema.plugin(unique_validator, {message :  '{PATH} debe de ser único'});
 
+
+pagoSchema.methods.toJSON = function(){
+    let pago = this;
+    let pagoObject = pago.toObject();
+    delete pagoObject.created_At;
+    delete pagoObject.updated_At;
+    return pagoObject;
+}
+
+
 module.exports = mongoose.model('Pago', pagoSchema);

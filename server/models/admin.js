@@ -13,6 +13,9 @@ adminSchema.methods.toJSON = function(){
     let admin = this;
     let adminObject = admin.toObject();
     delete adminObject.password;
+    delete adminObject.created_At;
+    delete adminObject.updated_At;
+    delete adminObject.estado;
     return adminObject;
 }
 

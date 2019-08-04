@@ -8,53 +8,102 @@ const UUID = require('uuid/v1');
 Models
 =====================================*/
 let Especialidad = require('../../models/medico/especialidad');
+let Medico = require('../../models/medico/medico');
 /*===================================
 Own
 =====================================*/
 let helpers = require("../../helpers/functions");
 
 const APP  = express();
+
+
+/******************************************************************************************************
+Inicio de Métodos
+*******************************************************************************************************/
+
 /*===================================
 Obtener toda la lista de las especialidades
 del hospital
 =====================================*/
 APP.get('/listar', (request, response)=>{
-
-    Especialidad.find({'estado' : true})
-            .exec((error, especialidades) => {
-                if(error){
-                    helpers.errorMessage(response, 500, 'Error al obtener la lista de especialidades', error);
-                }
-                helpers.successMessage(response, 200, especialidades);
-            });
+    showEspecialidades(response);
 });
+
+
+
+/*===================================
+Listar especialidad diferentes a la del médico
+external_id del médico por la URL
+=====================================*/
+APP.get('/listarEspecialidades/:external_id', (request, response)=>{
+   
+    let external_id = request.params.external_id;
+ 
+    Medico.findOne({'estado' : true, 'external_id' : external_id}, (error, medicoEncontrado)=>{
+
+        if(error){
+            return helpers.errorMessage(response, 500, 'Error al extraer las especialidades', error);
+        }
+        if(!medicoEncontrado){
+            return helpers.errorMessage(response, 400, 'Ocurrio un error al extraer las distintas especialidades');
+        }
+
+        let especialidadesMedico = medicoEncontrado.especialidades;
+
+        if(especialidadesMedico){
+
+            let especialidadResponse = [];
+
+            let respuesta = getEspecialidades();
+            respuesta.then(especialidades =>{
+
+                especialidadResponse = [...especialidades];
+                especialidadesMedico.forEach(idEspecialidadMedico => {
+                        especialidadResponse = especialidadResponse.filter(especialidad => 
+                            especialidad._id.toString() !== idEspecialidadMedico.toString());
+                });
+            
+                return helpers.successMessage(response, 200, especialidadResponse);
+            
+            }).catch(error =>{
+                 return helpers.errorMessage(response, 500, 'Ocurrió un error al extraer las especialidades', error);
+            });
+
+
+        }else{
+            showEspecialidades(response);
+        }
+    });
+});
+
 
 /*===================================
 Ingresar una nueva especialidad
 Params:
     -nombre
     -descripción
+    -precioConsulta
 =====================================*/
 APP.post('/ingresar', (request, response)=>{
 
     let especialidadBody = infoBody(request.body);
 
     if(under_score.isEmpty(especialidadBody)){
-        helpers.errorMessage(response, 400,"Se necesita la información de la especialidad");
+        return helpers.errorMessage(response, 400,"Se necesita la información de la especialidad");
     }
     
     especialidadBody.external_id = UUID();
-    especialidadBody.created_At = new Date();
-    especialidadBody.updated_At = new Date();
+    especialidadBody.created_At = helpers.transformarHora(new Date());
+    especialidadBody.updated_At = helpers.transformarHora(new Date());
     especialidadBody.estado = true;
 
     let especialidad = new Especialidad(especialidadBody); 
 
     especialidad.save((error, especialidadGuardada)=>{
         if(error){
-            helpers.errorMessage(response, 500, 'Error al crear la especialidad', error);
+            return helpers.errorMessage(response, 500, 'Error al crear la especialidad', error);
         }
-        helpers.successMessage(response, 201, especialidadGuardada);
+        return helpers.successMessage(response, 201, especialidadGuardada);
     });
 });
 
@@ -63,6 +112,7 @@ Modificar una especialidad
 external_id de la especialidad
     -nombre
     -descripción
+    -precioConsulta
 =====================================*/
 APP.put('/modificar/:external_id', (request, response) => {
 
@@ -71,28 +121,28 @@ APP.put('/modificar/:external_id', (request, response) => {
     Especialidad.findOne({'external_id' : external_id}, (error, especialidadEncontrada) =>{
 
         if(error){
-            helpers.errorMessage(response, 500, 'Error en el servidor', error);
+            return helpers.errorMessage(response, 500, 'Error en el servidor', error);
         }
         if(!especialidadEncontrada){
-            helpers.errorMessage(response, 400,'No se ha encontrado ninguna especialidad');
+            return helpers.errorMessage(response, 400,'No se ha encontrado ninguna especialidad');
         }
 
         let especialidadActualizada = infoBody(request.body);
 
         if(under_score.isEmpty(especialidadActualizada)){
-            helpers.errorMessage(response, 400,"Se necesita información de la especialidad para modificar");
+            return helpers.errorMessage(response, 400,"Se necesita información de la especialidad para modificar");
         }
         
         especialidadEncontrada.nombre = especialidadActualizada.nombre || especialidadEncontrada.nombre;
         especialidadEncontrada.descripcion = especialidadActualizada.descripcion || especialidadEncontrada.descripcion;
-        especialidadEncontrada.updated_At = new Date();
+        especialidadEncontrada.precioConsulta = especialidadActualizada.precioConsulta || especialidadEncontrada.precioConsulta;
+        especialidadEncontrada.updated_At = helpers.transformarHora(new Date());
 
         especialidadEncontrada.save((error, especialidadModificada) => {
             if(error){
-                helpers.errorMessage(response, 500, 'Error al modificar la especialidad', error);
+                return helpers.errorMessage(response, 500, 'Error al modificar la especialidad', error);
             }
-
-            helpers.successMessage(response, 200, especialidadModificada);
+            return helpers.successMessage(response, 200, especialidadModificada);
         });
     });
 });
@@ -109,20 +159,20 @@ APP.put('/eliminar/:external_id', (request, response) => {
     Especialidad.findOne({'external_id' : external_id, 'estado' : true}, (error, especialidadEncontrada) =>{
 
         if(error){
-            helpers.errorMessage(response, 500, 'Error en el servidor', error);
+            return helpers.errorMessage(response, 500, 'Error en el servidor', error);
         }
         if(!especialidadEncontrada){
-            helpers.errorMessage(response, 400,'No se ha encontrado la especialidad');
+            return helpers.errorMessage(response, 400,'No se ha encontrado la especialidad');
         }
 
-        especialidadEncontrada.updated_At = new Date();
+        especialidadEncontrada.updated_At = helpers.transformarHora(new Date());
         especialidadEncontrada.estado = false;
 
         especialidadEncontrada.save((error, especialidadEliminada) => {
             if(error){
-                helpers.errorMessage(response, 500, 'Error al eliminar la especialidad', error);
+                return helpers.errorMessage(response, 500, 'Error al eliminar la especialidad', error);
             }
-            helpers.successMessage(response, 200, especialidadEliminada);
+            return helpers.successMessage(response, 200, especialidadEliminada);
         });
     });
 });
@@ -135,8 +185,24 @@ let infoBody = (body) => {
     return under_score.pick(body, 
                             [
                             'nombre',
-                            'descripcion'
+                            'descripcion',
+                            'precioConsulta'
                             ]);
+}
+
+let getEspecialidades = () =>{
+    return Especialidad.find({'estado' : true}).exec();
+}
+
+let showEspecialidades = (response) =>{
+    
+    let respuesta = getEspecialidades();
+
+    respuesta.then(especialidades =>{
+        return helpers.successMessage(response, 200, especialidades);
+    }).catch(error =>{
+         return helpers.errorMessage(response, 500, 'Ocurrió un error al extraer las especialidades', error);
+    });
 }
 
 module.exports = APP;

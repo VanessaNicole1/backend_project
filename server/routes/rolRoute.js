@@ -3,10 +3,15 @@ Libraries
 =====================================*/
 let express =  require('express');
 const UUID = require('uuid/v1');
+
 /*===================================
 Models
 =====================================*/
 let Rol = require('../models/rol');
+/*===================================
+OWN
+=====================================*/
+let helpers = require("../helpers/functions");
 
 const APP  = express();
 
@@ -17,9 +22,9 @@ APP.get('/', (request, response)=>{
 
     Rol.find({}).exec((error, roles) =>{
             if(error){
-                helpers.errorMessage(response, 500, 'Error al obtener la lista de roles', error);
+                return helpers.errorMessage(response, 500, 'Error al obtener la lista de roles', error);
             }
-            helpers.successMessage(response, 200, roles);
+            return helpers.successMessage(response, 200, roles);
         });
 });
 
@@ -42,9 +47,9 @@ APP.post('/', (request, response)=>{
 
     rol.save((error, rolGuardado)=>{
         if(error){
-            helpers.errorMessage(response, 500, 'Error al crear rol', error);
+            return helpers.errorMessage(response, 500, 'Error al crear rol', error);
         }
-        helpers.successMessage(response, 201, rolGuardado);
+        return helpers.successMessage(response, 201, rolGuardado);
     });
 });
 

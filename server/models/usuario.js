@@ -21,7 +21,13 @@ usuarioSchema.add({
     historia : {
         type: Schema.Types.ObjectId,
         ref : 'Historia' 
-    }
+    },
+    citas : [
+        {
+            type : Schema.Types.ObjectId,
+            ref : 'Cita'
+        }
+    ]
 });
 
 usuarioSchema.plugin(unique_validator, {message :  '{PATH} debe de ser único'});
@@ -30,6 +36,10 @@ usuarioSchema.methods.toJSON = function(){
     let usuario = this;
     let usuarioObject = usuario.toObject();
     delete usuarioObject.password;
+    delete usuarioObject.created_At;
+    delete usuarioObject.updated_At;
+    delete usuarioObject.rol;
+    delete usuarioObject.estado;
     return usuarioObject;
 }
 

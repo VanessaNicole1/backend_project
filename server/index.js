@@ -1,22 +1,23 @@
-/*Establecer puerto de Node mediante el archivo config*/
+/*===================================
+Global Congiguration
+=====================================*/
 require('./config/config');
-/*Server Express*/
-let express =  require('express');
-/*Mongoose for Manipulate MONGODB*/
-let mongoose = require('mongoose');
-/*Body-Parser*/
+
+/*===================================
+Libraries
+=====================================*/
 let body_parser = require('body-parser');
-/*Importar Rutas*/
-let rolRoutes = require('./routes/rolRoute');
-let usuarioRoutes = require('./routes/usuarioRoute');
-let pagoRoutes = require('./routes/pagoRoute');
-let medicoRoutes = require('./routes/medicoRoutes/medicoRoute');
-let especialidadRoute  = require('./routes/medicoRoutes/especialidadRoute');
+let express =  require('express');
+let mongoose = require('mongoose');
 
-let app = express();
+/*===================================
+Variables
+=====================================*/
+const APP = express();
 
-app.use(body_parser.urlencoded({extended : false}));
-app.use(body_parser.json());
+
+APP.use(body_parser.urlencoded({extended : false}));
+APP.use(body_parser.json());
 
 /*===================================
 Conection to MongoDB
@@ -33,18 +34,11 @@ mongoose.connect('mongodb://localhost:27017/hospital',
     console.log("BD online");
 });
 
-/*===================================
-RUTAS
-=====================================*/
-app.use('/rol', rolRoutes);
-app.use('/persona', usuarioRoutes);
-app.use('/pago', pagoRoutes);
-app.use('/medico', medicoRoutes);
-app.use('/especialidad', especialidadRoute);
+APP.use(require('./routes/index'));
 
 /*===================================
 Montar el servidor
 =====================================*/
-app.listen(process.env.PORT, () => {
+APP.listen(process.env.PORT, () => {
     console.log(`Estamos corriendo NODE en el puerto: ${process.env.PORT}`);
 });

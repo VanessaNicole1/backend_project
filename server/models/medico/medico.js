@@ -32,10 +32,10 @@ medicoSchema.add({
             ref : 'Especialidad' 
         }
     ],
-    consultas : [
+    citas : [
         {
-            type: Schema.Types.ObjectId,
-            ref : 'Consulta' 
+            type : Schema.Types.ObjectId,
+            ref : 'Cita'
         }
     ]
 });
@@ -46,6 +46,10 @@ medicoSchema.methods.toJSON = function(){
     let medico = this;
     let medicoObject = medico.toObject();
     delete medicoObject.password;
+    delete medicoObject.estado;
+    delete medicoObject.created_At;
+    delete medicoObject.updated_At;
+    delete medicoObject.rol;
     return medicoObject;
 }
 

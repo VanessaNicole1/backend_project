@@ -12,14 +12,6 @@ let consultaSchema = new Schema({
         type: String,
         required: [true, 'Se requiere el diagnóstico']
     },
-    fecha: {
-        type: Date,
-        required: [true, 'Se requiere la fecha de la consulta']
-    },
-    hora : {
-        type : Date,
-        required : [true, 'Se requiere la hora de consulta']
-    },
     motivo: {
         type: String,
         required: [true, 'Se requiere el motivo de la consulta']
@@ -28,31 +20,37 @@ let consultaSchema = new Schema({
         type: Boolean,
         required: [true, 'Se requiere el estado de la conuslta']
     },
-    precioConsulta: {
-        type: Number,
-        required: [true, 'Se requiere el precio de la consulta']
-    },
     historia: {
         type: Schema.Types.ObjectId,
-        ref: 'Historial'
-    },
-    medico: {
-        type: Schema.Types.ObjectId,
-        ref: 'Medico'
+        ref: 'Historia',
+        required : [true, 'Es necesaria el historial clínico de la persona']
     },
     receta : {
-        type: Schema.Types.ObjectId,
-        ref: 'Receta'
+        type : String
     },
-    createdAt: {
+    cita : {
+        type : Schema.Types.ObjectId,
+        ref : 'Cita',
+        required : [true, 'La consulta debe pertenecer a una cita previamente reservada']    
+    },
+    created_At: {
         type: Date,
         required: [true, 'El createdAt es requerido']
     },
-    updatedAt: {
+    updated_At: {
         type: Date,
         required: [true, 'El updatedAt es requerido']
     }
 });
+
+consultaSchema.methods.toJSON = function(){
+    let consulta = this;
+    let consultaObject = consulta.toObject();
+    delete consultaObject.created_At;
+    delete consultaObject.updated_At;
+    delete consultaObject.estado;
+    return consultaObject;
+}
 
 
 module.exports = moongose.model('Consulta', consultaSchema);
