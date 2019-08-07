@@ -9,6 +9,14 @@ Own
 let helpers = require("../helpers/functions");
 
 /*===================================
+Variables
+=====================================*/
+const MED_ROLE = process.env.MED_ROLE;
+const USER_ROLE = process.env.USER_ROLE;
+const ADMIN_ROLE = process.env.ADMIN_ROLE;
+const UNAUTHORIZED = "Acceso denegado";
+
+/*===================================
 Verificar Token
 params:
     request,
@@ -31,62 +39,184 @@ let verifyToken = (request, response, next) =>{
 };
 
 /*===================================
+Verificar Rol Admin y Usuario o Médico
+=====================================*/
+let verifyAdminAnduserOrMed = (request, response, next) =>{
+
+    let user = request.usuario;
+    let external_id = request.params.usuario_id;
+
+    if(compareAllUser(user, USER_ROLE, external_id)){
+        next();
+        return;
+    }
+    external_id = request.params.external_id;
+    if(compareAllUser(user, MED_ROLE, external_id)){
+        next();
+        return;
+    }
+    if(compareUserRole(user, ADMIN_ROLE)){
+        next();
+        return;
+    }
+    return helpers.errorMessage(response, 401, UNAUTHORIZED);
+};
+
+/*===================================
 Verifica Rol de administrador
 =====================================*/
 let verifyAdmin = (request, response, next) =>{
 
     let user = request.usuario;
 
-    if(user.role === "ADMIN_ROLE"){
+    if(compareUserRole(user, ADMIN_ROLE)){
         next();
         return;
     }
-    return helpers.errorMessage(response, 401, "No eres administrador");
+    return helpers.errorMessage(response, 401, UNAUTHORIZED);
 };
 
 /*===================================
 Verifica Rol de médico
 =====================================*/
+let verifyAllMed = (request, response, next) =>{
+
+    let user = request.usuario;
+
+    if(compareUserRole(user, MED_ROLE)){
+        next();
+        return;
+    }
+   return helpers.errorMessage(response, 401, UNAUTHORIZED);
+};
+
+/*===================================
+Verifica Rol de médico y su sesión actual
+=====================================*/
 let verifyMed = (request, response, next) =>{
 
     let user = request.usuario;
 
-    if(user.role === "MED_ROLE"){
+    let external_id = request.params.external_id;
+
+    if(compareAllUser(user, MED_ROLE, external_id)){
         next();
         return;
     }
-    return helpers.errorMessage(response, 401, "No eres médico");
+    return helpers.errorMessage(response, 401, UNAUTHORIZED);
 };
 
 /*===================================
-Verifica Rol de Usuario
+Verifica Rol de Usuario y su sesión actual
 =====================================*/
 let verifyUser = (request, response, next) =>{
 
     let user = request.usuario;
 
-    if(user.role === "USER_ROLE"){
+    let external_id = request.params.external_id;
+
+    if(compareAllUser(user, USER_ROLE, external_id)){
         next();
         return;
     }
-    return helpers.errorMessage(response, 401, "No eres usuario");
+    return helpers.errorMessage(response, 401, UNAUTHORIZED);
 };
 
+/*===================================
+Verificar Admin o Usuario
+=====================================*/
 let verifyAdminOrUser = (request, response, next) =>{
 
     let user = request.usuario;
 
-    if(user.role === "USER_ROLE" || user.role === "ADMIN_ROLE"){
+    let external_id = request.params.external_id;
+
+    if(compareAllUser(user, USER_ROLE, external_id)){
         next();
         return;
     }
-    return helpers.errorMessage(response, 401, "No estas autorizado");
+    if(compareUserRole(user, ADMIN_ROLE)){
+        next();
+        return;
+    }
+    return helpers.errorMessage(response, 401,UNAUTHORIZED); 
 };
 
+/*===================================
+Verificar Admin o Cualquier usuario
+=====================================*/
+let verifyAdminOrAllUser = (request, response, next) =>{
+
+    let user = request.usuario;
+    if(compareUserRole(user, USER_ROLE) || compareUserRole(user, ADMIN_ROLE)){
+        next();
+        return;
+    }
+    return helpers.errorMessage(response, 401, UNAUTHORIZED);
+};
+
+/*===================================
+Verificar admin o Medico
+=====================================*/
+let verifyAdminOrMed = (request, response, next) =>{
+
+    let user = request.usuario;
+
+    let external_id = request.params.external_id;
+
+    if(compareAllUser(user, MED_ROLE, external_id)){
+        next();
+        return;
+    }
+    if(compareUserRole(user, ADMIN_ROLE)){
+        next();
+        return;
+    }
+    return helpers.errorMessage(response, 401,UNAUTHORIZED);
+};
+
+/******************************************************************************************************
+Métodos Auxiliares
+*******************************************************************************************************/
+
+/*===================================
+Compara el rol del usuario
+=====================================*/
+let compareUserRole = (user, rol ) =>{
+    if(user.role === rol){
+            return true;
+    }
+    return false;
+} 
+/*===================================
+Compara el external_id del usuario
+=====================================*/
+let compareExternalUser = (user, external_id) =>{
+    if(external_id === user.person.external_id){
+       return true;
+    }
+    return false;
+}
+/*===================================
+Compara el external_id del usuario y su ROL
+=====================================*/
+let compareAllUser = (user, rol, external_id) =>{
+   
+    if(compareUserRole(user, rol)){
+        if(compareExternalUser(user, external_id)){
+           return true;
+        }
+        return false;
+    }
+}
 module.exports = {
-    verifyToken,
+    verifyToken, 
     verifyAdmin,
-    verifyMed,
-    verifyUser,
-    verifyAdminOrUser
+    verifyMed, //OJOO
+    verifyUser, 
+    verifyAdminOrUser, 
+    verifyAdminOrMed, 
+    verifyAdminOrAllUser, 
+    verifyAllMed,  
+    verifyAdminAnduserOrMed 
 }

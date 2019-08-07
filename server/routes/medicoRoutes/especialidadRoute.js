@@ -13,8 +13,11 @@ let Medico = require('../../models/medico/medico');
 Own
 =====================================*/
 let helpers = require("../../helpers/functions");
-
+/*===================================
+Variables
+=====================================*/
 const APP  = express();
+let  {  verifyToken, verifyAdmin, verifyAdminOrAllUser } = require('../../middlewares/authentication');
 
 
 /******************************************************************************************************
@@ -25,7 +28,7 @@ Inicio de Métodos
 Obtener toda la lista de las especialidades
 del hospital
 =====================================*/
-APP.get('/listar', (request, response)=>{
+APP.get('/listar', [verifyToken,verifyAdminOrAllUser] ,(request, response)=>{
     showEspecialidades(response);
 });
 
@@ -35,7 +38,7 @@ APP.get('/listar', (request, response)=>{
 Listar especialidad diferentes a la del médico
 external_id del médico por la URL
 =====================================*/
-APP.get('/listarEspecialidades/:external_id', (request, response)=>{
+APP.get('/listarEspecialidades/:external_id', [verifyToken, verifyAdmin],(request, response)=>{
    
     let external_id = request.params.external_id;
  
@@ -76,6 +79,48 @@ APP.get('/listarEspecialidades/:external_id', (request, response)=>{
     });
 });
 
+/*===================================
+Listar médicos de determinada especialidad
+external_id de la especialidad
+=====================================*/
+APP.get('/listarDeterminadaEspecialidad/:external_id',[verifyToken, verifyAdminOrAllUser] ,(request, response) => {
+
+    let external_id = request.params.external_id;
+
+    Especialidad.findOne({ 'estado': true, 'external_id': external_id }, (error, especialidadEncontrada) => {
+
+        if (error) {
+            return helpers.errorMessage(response, 500, 'Error en el servidor');
+        }
+
+        if (!especialidadEncontrada) {
+            return helpers.errorMessage(response, 400, 'No se encontro la especialidad');
+        }
+
+        let idEspecialidad = especialidadEncontrada._id.toString();
+
+        let arregloMedicos = [];
+
+        let allMedicos = getMedicos();
+
+        allMedicos.then(medicos => {
+        
+            medicos.forEach(medico => {
+
+                let allEspecialidades = medico.especialidades;
+
+                if(allEspecialidades.includes(idEspecialidad)){
+                    arregloMedicos.push(medico);
+                }
+            });
+            return helpers.successMessage(response, 200, arregloMedicos);
+
+        }).catch(error => {
+            return helpers.errorMessage(response, 500, 'Ocurrió un error al extraer los médicos', error);
+      });
+    });
+});
+
 
 /*===================================
 Ingresar una nueva especialidad
@@ -84,7 +129,7 @@ Params:
     -descripción
     -precioConsulta
 =====================================*/
-APP.post('/ingresar', (request, response)=>{
+APP.post('/ingresar', [verifyToken, verifyAdmin] ,(request, response)=>{
 
     let especialidadBody = infoBody(request.body);
 
@@ -114,7 +159,7 @@ external_id de la especialidad
     -descripción
     -precioConsulta
 =====================================*/
-APP.put('/modificar/:external_id', (request, response) => {
+APP.put('/modificar/:external_id', [verifyToken, verifyAdmin],(request, response) => {
 
     let external_id = request.params.external_id;
 
@@ -152,7 +197,7 @@ Eliminar logicamente una especialidad
 external_id de la especialidad a eliminar. 
 no params
 =====================================*/
-APP.put('/eliminar/:external_id', (request, response) => {
+APP.put('/eliminar/:external_id', [verifyToken, verifyAdmin] ,(request, response) => {
 
     let external_id = request.params.external_id;
 
@@ -203,6 +248,11 @@ let showEspecialidades = (response) =>{
     }).catch(error =>{
          return helpers.errorMessage(response, 500, 'Ocurrió un error al extraer las especialidades', error);
     });
+}
+
+let getMedicos = () => {
+
+    return Medico.find({ 'estado': true }).exec();
 }
 
 module.exports = APP;

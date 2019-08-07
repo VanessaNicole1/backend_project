@@ -24,8 +24,8 @@ Variables
 const APP  = express();
 const PERSON_PARAMS = 'nombres apellidos telefono external_id';
 const CITA_PARAMS = 'precioConsulta fecha hora external_id';
-const CONSULTA_PARAMS = 'diagnostico motivo receta external_id'
-
+const CONSULTA_PARAMS = 'diagnostico motivo receta external_id';
+let  {  verifyToken, verifyAdminOrUser, verifyAllMed, verifyAdminAnduserOrMed } = require('../middlewares/authentication');
 
 /**********************************************************************************************************
                                      MEDICO   -   CONSULTAS                   
@@ -39,7 +39,7 @@ Params:
    - motivo   
    - receta           
 ======================================*/
-APP.post('/ingresar/:external_id', (request, response) => {
+APP.post('/ingresar/:external_id', [verifyToken, verifyAllMed], (request, response) => {
 
     let external_id = request.params.external_id;
 
@@ -107,7 +107,7 @@ external_id del médico por URL.
 params:
     usuario : external_id del paciente
 ======================================*/
-APP.get('/verConsultas/:external_id/:usuario_id', (request, response) => {
+APP.get('/verConsultas/:external_id/:usuario_id',  [verifyToken, verifyAdminAnduserOrMed],(request, response) => {
 
     let external_id = request.params.external_id;
 
@@ -162,7 +162,7 @@ Ver todas las consultas de determinado
  paciente
 external_id del paciente por URL.
 ======================================*/
-APP.get('/verConsultasPaciente/:external_id/', (request, response) => {
+APP.get('/verConsultasPaciente/:external_id', [verifyToken, verifyAdminOrUser], (request, response) => {
 
     let external_id = request.params.external_id;
 
@@ -212,7 +212,7 @@ Campos que se pueden modificar son:
    - motivo
    - receta                                 
 ======================================*/
-APP.put('/modificarConsulta/:external_id', (request, response) => {
+APP.put('/modificarConsulta/:external_id', [verifyToken, verifyAllMed], (request, response) => {
     let external_id = request.params.external_id;
 
     Consulta.findOne({ 'estado': true, 'external_id': external_id }, (error, consultaEncontrada) => {
@@ -244,9 +244,6 @@ APP.put('/modificarConsulta/:external_id', (request, response) => {
             return helpers.successMessage(response, 200, consultaGuardada);
         });
     });
-
-
-    
 });
 
 

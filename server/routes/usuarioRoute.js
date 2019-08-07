@@ -18,7 +18,7 @@ let Usuario = require('../models/usuario');
 Own
 =====================================*/
 let helpers = require("../helpers/functions");
-let  { verifyAdmin, verifyToken, verifyUser, verifyMed, verifyAdminOrUser } = require('../middlewares/authentication');
+let  { verifyAdmin, verifyToken, verifyAdminOrUser, verifyUser, verifyAllMed } = require('../middlewares/authentication');
 
 /*===================================
 Variables
@@ -57,6 +57,12 @@ APP.post('/ingresar', (request, response)=>{
     
     if(under_score.isEmpty(usuarioBody)){
         return helpers.errorMessage(response, 400,'Ingrese los parámetros necesarios de la persona' );
+    }
+
+    let isvalid = helpers.validarCedula(usuarioBody.cedula);
+
+    if (!isvalid) {
+        return helpers.errorMessage(response, 400, 'La cédula no es válida');
     }
         
     Rol.findOne({'nombre' : 'USER_ROLE'}, (error, rolEncontrado) =>{
@@ -98,7 +104,7 @@ optional Params:
 nombres, apellidos, edad, genero, telefono
 dirección, password, foto
 =====================================*/
-APP.put('/modificar/:external_id', (request, response) => {
+APP.put('/modificar/:external_id',  [verifyToken, verifyAdminOrUser], (request, response) => {
     
     let external_id = request.params.external_id;
     
@@ -143,7 +149,7 @@ APP.put('/modificar/:external_id', (request, response) => {
 Eliminado Lógico de una persona
 external_id del usuario
 =====================================*/
-APP.put('/eliminar/:external_id', (request, response) => {
+APP.put('/eliminar/:external_id',  [verifyToken, verifyAdmin],  (request, response) => {
 
     let external_id = request.params.external_id;
 
@@ -177,7 +183,7 @@ APP.put('/eliminar/:external_id', (request, response) => {
 Listar los pagos de determinada usuario activa
 external_id del usuario a consultar
 =====================================*/
-APP.get('/listarPagos/:external_id', (request, response)=>{
+APP.get('/listarPagos/:external_id',  [verifyToken, verifyAdminOrUser], (request, response)=>{
 
     let external_id = request.params.external_id;
 
@@ -202,7 +208,7 @@ Params:
     -cantidad 
     -tipo
 =====================================*/
-APP.post('/ingresarPago/:external_id', (request, response)=>{
+APP.post('/ingresarPago/:external_id',  [verifyToken, verifyUser], (request, response)=>{
 
     let external_id = request.params.external_id;
 
@@ -254,7 +260,7 @@ APP.post('/ingresarPago/:external_id', (request, response)=>{
 Obtener el historial del usuario
 external_id de usuario                                 
 ======================================*/
-APP.get('/obtenerHistorial/:external_id', (request, response) => {
+APP.get('/obtenerHistorial/:external_id',  [verifyToken] ,(request, response) => {
 
     let external_id = request.params.external_id;
 
@@ -289,7 +295,7 @@ external_id del usuario por la URL
 required params:
   * enfermedades, enfermedadesHereditarias, habitos, medico : external_id_médico.
 ======================================*/
-APP.post('/agregarHistorial/:external_id', (request, response) => {
+APP.post('/agregarHistorial/:external_id', [verifyToken, verifyAllMed] , (request, response) => {
 
     external_id = request.params.external_id;
 

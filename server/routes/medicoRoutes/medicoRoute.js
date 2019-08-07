@@ -22,6 +22,8 @@ Variables
 =====================================*/
 const APP  = express();
 const ESPECIALIDAD_PARAMS = 'nombre descripcion precioConsulta external_id';
+const MED_PARAMS = 'nombres apellidos foto especialidades external_id';
+let  {  verifyToken, verifyAdminOrMed, verifyAdmin, verifyAdminOrAllUser} = require('../../middlewares/authentication');
 
 /******************************************************************************************************
 Inicio de métodos
@@ -30,7 +32,7 @@ Inicio de métodos
 /*===================================
 Listar todos los médicos activos
 =====================================*/
-APP.get('/listar', (request, response)=>{
+APP.get('/listar', [verifyToken, verifyAdmin], (request, response)=>{
 
     Medico.find({'estado' : true})
             .exec((error, medicos) => {
@@ -46,7 +48,7 @@ APP.get('/listar', (request, response)=>{
 Listar el médico con sus especialidades
 external_id del médico a consultar
 =====================================*/
-APP.get('/listarMedico/:external_id', (request, response)=>{
+APP.get('/listarMedico/:external_id',  [verifyToken, verifyAdminOrMed],(request, response)=>{
 
     let external_id = request.params.external_id;
 
@@ -65,6 +67,37 @@ APP.get('/listarMedico/:external_id', (request, response)=>{
             });
 });
 
+/*====================================
+Lista de medicos con la información necesaria que necesita saber el paciente 
+external_id del médico                                
+======================================*/
+APP.get('/listarMed/:external_id', [verifyToken, verifyAdminOrAllUser], (request, response) => {
+
+    let external_id = request.params.external_id;
+
+    Medico.findOne({ 'estado': true, 'external_id': external_id })
+        .select(MED_PARAMS)
+        .populate({
+            path: 'especialidades',
+            select: `${ESPECIALIDAD_PARAMS} -_id`,
+            match: { 'estado': true }
+        })
+        .exec((error, medicoEncontrado) => {
+            if (error) {
+
+                return helpers.errorMessage(response, 500, 'Error al extraer el historial del usuario');
+
+            }
+
+            if (!medicoEncontrado) {
+                return helpers.errorMessage(response, 500, 'No se encontró el médico');
+            }
+
+            return helpers.successMessage(response, 200, medicoEncontrado);
+        });
+});
+
+
 /*===================================
 Ingresar un nuevo médico 
 required Params:
@@ -74,7 +107,7 @@ required Params:
 optional Params:
     foto, [especialidades] : [external_id_especialida1 , external_id_especialidad2]
 =====================================*/
-APP.post('/ingresar', (request, response)=>{
+APP.post('/ingresar',[verifyToken, verifyAdmin] ,(request, response)=>{
     
     let medicoBody = infoBody(request.body);
 
@@ -141,7 +174,7 @@ campos a modificar:
     nombres, apellidos, edad, género
     teléfono, dirección, password, citas, diarias, sueldo, foto.
 =====================================*/
-APP.put('/modificar/:external_id', (request, response) => {
+APP.put('/modificar/:external_id', [verifyToken, verifyAdmin] ,(request, response) => {
 
     let external_id = request.params.external_id;
 
@@ -187,7 +220,7 @@ Eliminado Lógico
 external_id del médico a eliminar
 no params
 =====================================*/
-APP.put('/eliminar/:external_id', (request, response) => {
+APP.put('/eliminar/:external_id', [verifyToken, verifyAdmin], (request, response) => {
 
     let external_id = request.params.external_id;
 
@@ -222,7 +255,7 @@ external_id del médico a agregar especialidad
 params:
     especialidad : external_id de la especialidad
 =====================================*/
-APP.put('/agregarEspecialidad/:external_id', (request, response) => {
+APP.put('/agregarEspecialidad/:external_id', [verifyToken, verifyAdmin] ,(request, response) => {
 
     let external_id = request.params.external_id;
 
@@ -267,7 +300,7 @@ external_id del médico a eliminar especialidad
 params: 
     especialidad : external_id de la especialidad
 =====================================*/
-APP.put('/eliminarEspecialidad/:external_id', (request, response) => {
+APP.put('/eliminarEspecialidad/:external_id', [verifyToken, verifyAdmin] ,(request, response) => {
 
     let especialidadToDelete = request.body.especialidad; 
 

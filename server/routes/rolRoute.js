@@ -13,7 +13,12 @@ OWN
 =====================================*/
 let helpers = require("../helpers/functions");
 
+
+/*===================================
+Variables
+=====================================*/
 const APP  = express();
+
 
 /*===================================
 Obtener la lista de roles
