@@ -14,6 +14,9 @@ let especialidadRoute  = require('./medicoRoutes/especialidadRoute');
 let citaRoute = require('./citaRoute');
 let consultaRoute = require('./consultaRoute');
 let loginRoute = require('./loginRoute');
+let uploadRoute = require('./uploadRoute');
+
+
 
 /*===================================
 Variables
@@ -31,6 +34,7 @@ APP.use('/especialidad', especialidadRoute);
 APP.use('/cita', citaRoute);
 APP.use('/consulta', consultaRoute);
 APP.use('/login',loginRoute );
+APP.use('/upload', uploadRoute);
 
 module.exports = APP;
 

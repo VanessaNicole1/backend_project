@@ -15,7 +15,12 @@ let Usuario = require('../models/usuario');
 Own
 =====================================*/
 let helpers = require('../helpers/functions');
-
+/*===================================
+Google SIGNIN
+=====================================*/
+const {OAuth2Client} = require('google-auth-library');
+const CLIENT_ID = process.env.CLIENT_ID;
+const client = new OAuth2Client(CLIENT_ID);
 /*===================================
 Variables
 =====================================*/
@@ -77,6 +82,79 @@ APP.post('/', (request, response)=>{
 });
 
 
+/*===================================
+Google Authentication
+=====================================*/
+async function verify(token) {
+    const ticket = await client.verifyIdToken({
+        idToken: token,
+        audience: CLIENT_ID,  // Specify the CLIENT_ID of the app that accesses the backend
+        // Or, if multiple clients access the backend:
+        //[CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3]
+    });
+    const payload = ticket.getPayload();
+    
+    // const userid = payload['sub'];
+  
+    return {
+        nombre : payload.name,
+        email : payload.email,
+        image : payload.picture,
+        google : true
+    } 
+  }
+
+APP.post('/google', async(request, response) =>{
+
+    let token = request.body.token;
+    let googleUser = await verify(token).catch(error => {
+        return response.status(403).json({
+            ok : false,
+            mensaje : "Token no válido",
+            error
+        });
+    }) 
+
+    Usuario.findOne( {'estado' : true, 'correo' : googleUser.email}, (error, usuarioEncontrado) =>{
+
+        if(error){
+            return helpers.errorMessage(response, 500, "Ocurrió un error al loguearse", error);
+        }
+
+        if(usuarioEncontrado){
+            if(!usuarioEncontrado.google){
+                return helpers.errorMessage(response, 400, "Debe usar su autenticación normal");
+            }
+            let user = {
+                role : process.env.USER_ROLE,
+                usuarioEncontrado
+            }
+
+            let token = JWT.sign({
+                usuario : user
+            }, process.env.SEED, {expiresIn : process.env.EXPIRES});
+
+            let finalUser = {
+                user,
+                token
+            }
+
+            return helpers.successMessage(response, 200, finalUser);
+
+        }else{
+            let usuario = new Usuario();
+        }
+
+
+
+    });
+
+    return response.json({
+            ok : true,
+            mensaje : "Ok",
+            googleUser
+    });
+});
 
 /*===================================
 Métodos Auxiliares
