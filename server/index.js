@@ -19,8 +19,9 @@ const APP = express();
 Cors
 =====================================*/
 APP.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*"); // update to match the domain you will make the request from
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Access-Control-Allow-Credentials",  true)
+    res.header("Access-Control-Allow-Origin", req.headers.origin); // update to match the domain you will make the request from
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, token");
     res.header("Access-Control-Allow-Methods", "POST, GET, PUT, DELETE, OPTIONS");
     next();
 });
@@ -32,6 +33,7 @@ APP.use(body_parser.json());
 /*===================================
 Conection to MongoDB
 =====================================*/
+mongoose.set('runValidators', true);
 mongoose.connect('mongodb://localhost:27017/hospital', 
                 {
                     useFindAndModify : false,

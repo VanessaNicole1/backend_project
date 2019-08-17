@@ -82,9 +82,10 @@ APP.post('/', (request, response)=>{
 });
 
 
+
 /*===================================
 Google Authentication
-=====================================*/
+=====================================
 async function verify(token) {
     const ticket = await client.verifyIdToken({
         idToken: token,
@@ -102,32 +103,31 @@ async function verify(token) {
         image : payload.picture,
         google : true
     } 
-  }
+    // let googleUser = await verify(token).catch(error => {
+    //     return response.status(403).json({
+    //         ok : false,
+    //         mensaje : "Token no válido",
+    //         error
+    //     });
+    // }) 
+  }*/
 
 APP.post('/google', async(request, response) =>{
 
-    let token = request.body.token;
-    let googleUser = await verify(token).catch(error => {
-        return response.status(403).json({
-            ok : false,
-            mensaje : "Token no válido",
-            error
-        });
-    }) 
+    let email = request.body.email;
+    let nombre = request.body.nombre;
+    let foto = request.body.foto;
 
-    Usuario.findOne( {'estado' : true, 'correo' : googleUser.email}, (error, usuarioEncontrado) =>{
+    Usuario.findOne( {'estado' : true, 'correo' : email}, (error, usuarioEncontrado) =>{
 
         if(error){
             return helpers.errorMessage(response, 500, "Ocurrió un error al loguearse", error);
         }
 
         if(usuarioEncontrado){
-            if(!usuarioEncontrado.google){
-                return helpers.errorMessage(response, 400, "Debe usar su autenticación normal");
-            }
             let user = {
                 role : process.env.USER_ROLE,
-                usuarioEncontrado
+                person : usuarioEncontrado
             }
 
             let token = JWT.sign({
@@ -135,6 +135,7 @@ APP.post('/google', async(request, response) =>{
             }, process.env.SEED, {expiresIn : process.env.EXPIRES});
 
             let finalUser = {
+                message : "YES",
                 user,
                 token
             }
@@ -142,17 +143,18 @@ APP.post('/google', async(request, response) =>{
             return helpers.successMessage(response, 200, finalUser);
 
         }else{
-            let usuario = new Usuario();
+            let usuario = {};
+            usuario.nombre = nombre;
+            usuario.email = email;
+            usuario.foto = foto;
+            
+            let finalUser = {
+                message : "NO",
+                usuario
+            }
+           
+            return helpers.successMessage(response, 200, finalUser);
         }
-
-
-
-    });
-
-    return response.json({
-            ok : true,
-            mensaje : "Ok",
-            googleUser
     });
 });
 

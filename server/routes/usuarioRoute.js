@@ -104,7 +104,7 @@ optional Params:
 nombres, apellidos, edad, genero, telefono
 dirección, password, foto
 =====================================*/
-APP.put('/modificar/:external_id',  [verifyToken, verifyAdminOrUser], (request, response) => {
+APP.put('/modificar/:external_id', [verifyToken, verifyAdminOrUser], (request, response) => {
     
     let external_id = request.params.external_id;
     
@@ -129,6 +129,15 @@ APP.put('/modificar/:external_id',  [verifyToken, verifyAdminOrUser], (request, 
         usuarioEncontrado.genero = usuarioBody.genero || usuarioEncontrado.genero;
         usuarioEncontrado.telefono = usuarioBody.telefono || usuarioEncontrado.telefono;
         usuarioEncontrado.direccion = usuarioBody.direccion || usuarioEncontrado.direccion;
+        usuarioEncontrado.correo = usuarioBody.correo || usuarioEncontrado.correo;
+        if(usuarioBody.cedula){
+            if(helpers.validarCedula(usuarioBody.cedula)){
+                usuarioEncontrado.cedula = usuarioBody.cedula || usuarioEncontrado.cedula;
+            }else{
+                return helpers.errorMessage(response, 400, "Cédula no valida");
+            }
+        }
+        
         if(usuarioBody.password){
             usuarioEncontrado.password = BCRYPT.hashSync(usuarioBody.password, 10);
         }

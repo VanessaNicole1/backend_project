@@ -22,7 +22,7 @@ APP.get('/:tipo/:foto', (request, response) => {
     if (FS.existsSync(pathImagen)) {
         response.sendFile(pathImagen);
     } else {
-        let pathNoImagen = PATH.resolve(__dirname, '../assets/no-img.jpg');
+        let pathNoImagen = PATH.resolve(__dirname, '../assets/no-img.jpeg');
         response.sendFile(pathNoImagen);
     }
 });
