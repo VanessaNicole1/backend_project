@@ -32,14 +32,59 @@ Listar todos la lista de personas activas
 =====================================*/
 APP.get('/listar', [verifyToken, verifyAdmin], (request, response)=>{
 
+    let desde = request.query.desde || 0;
+    desde = Number(desde);
+
     Usuario.find({'estado' : true})
+            .skip(desde)
+            .limit(5)
             .select('-_id')
             .exec((error, personas) => {
 
                 if(error){
                     return helpers.errorMessage(response, 500, 'Error al obtener la lista de personas', error);
                 }
-                return helpers.successMessage(response, 200, personas);
+
+                Usuario.count({'estado' : true}, (error, conteo)=>{
+                    finalSend = {
+                        conteo,
+                        personas
+                    }
+                    return helpers.successMessage(response, 200, finalSend);
+                });
+            });
+});
+
+/*===================================
+Listar todos la lista de personas activas
+=====================================*/
+APP.get('/mostrarPersona/:external_id', (request, response)=>{
+   
+    let external_id = request.params.external_id;
+
+    Usuario.findOne({'estado' : true, 'external_id' : external_id})
+            .populate({
+                path : 'historia',
+                match : {'estado' : true}
+            })
+            .populate({
+                path : 'pagos',
+                match : {'estado' : true}
+            })
+            .populate({
+                path : 'citas',
+                match : {'estado' : true}
+            })
+            .exec((error, usuarioEncontrado) => {
+
+                if(error){
+                    return helpers.errorMessage(response, 500, 'Error al obtener la lista de personas', error);
+                }
+
+                if(!usuarioEncontrado){
+                    return helpers.errorMessage(response, 400, 'No existe el usuario');
+                }
+                return helpers.successMessage(response, 200, usuarioEncontrado);    
             });
 });
 
@@ -291,7 +336,7 @@ APP.get('/obtenerHistorial/:external_id',  [verifyToken] ,(request, response) =>
             }
 
             if(!usuarioEncontrado.historia){
-                return helpers.errorMessage(response, 400, 'La persona aún no tiene historia clínica');
+                return helpers.successMessage(response, 200, 'NO');
             }
             return helpers.successMessage(response, 200, usuarioEncontrado);
         });
@@ -405,6 +450,56 @@ APP.post('/ingresarAdmin', (request, response)=>{
 
 });
 
+APP.get('/verifyEmail/:email', (request, response)=>{
+
+    let correo = request.params.email;
+
+    Usuario.findOne({'estado' : true, 'correo' : correo}, (error, emailEncontrado) =>{
+
+        if(error){
+            return helpers.errorMessage(response, 500, 'Sucedio un error', error);
+        }
+        if(!emailEncontrado){
+            let send = {
+                equal : false
+            }
+
+            return helpers.successMessage(response, 200, send );
+        }else{
+            let send = {
+                equal : true,
+                mensaje : 'El correo ya existe'
+            }
+            return helpers.successMessage(response, 200, send );
+        }
+    });
+});
+
+APP.get('/verifyCedula/:cedula', (request, response)=>{
+
+    let cedula = request.params.cedula;
+
+    Usuario.findOne({'estado' : true, 'cedula' : cedula}, (error, emailEncontrado) =>{
+
+        if(error){
+            return helpers.errorMessage(response, 500, 'Sucedio un error', error);
+        }
+        if(!emailEncontrado){
+            let send = {
+                equal : false
+            }
+
+            return helpers.successMessage(response, 200, send );
+        }else{
+            let send = {
+                equal : true,
+                mensaje : 'La cedula ya existe'
+            }
+            return helpers.successMessage(response, 200, send );
+        }
+    });
+});
+
 /******************************************************************************************************
                                     Métodos Auxiliares
 *******************************************************************************************************/    
@@ -424,6 +519,8 @@ let infoBody = (body) => {
                             'foto'
                             ]);
 }
+
+
 
 
 

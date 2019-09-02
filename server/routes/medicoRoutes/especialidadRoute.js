@@ -29,7 +29,32 @@ Obtener toda la lista de las especialidades
 del hospital
 =====================================*/
 APP.get('/listar', [verifyToken,verifyAdminOrAllUser] ,(request, response)=>{
-    showEspecialidades(response);
+    
+    let desde = request.query.desde || 0;
+    desde = Number(desde);
+
+    Especialidad.find({ estado: true })
+        .skip(desde)
+        .limit(5)
+        .select("-_id")
+        .exec((error, especialidades) => {
+            if (error) {
+                return helpers.errorMessage(
+                    response,
+                    500,
+                    "Error al extraer lista de especialidades"
+                );
+            }
+
+            Especialidad.count({ 'estado': true }, (error, conteo) => {
+                finalSend = {
+                    conteo,
+                    especialidades
+                }
+
+                return helpers.successMessage(response, 200, finalSend);
+            });
+        });
 });
 
 
@@ -41,6 +66,9 @@ external_id del médico por la URL
 APP.get('/listarEspecialidades/:external_id', [verifyToken, verifyAdmin],(request, response)=>{
    
     let external_id = request.params.external_id;
+
+    let desde = request.query.desde || 0;
+    desde = Number(desde);
  
     Medico.findOne({'estado' : true, 'external_id' : external_id}, (error, medicoEncontrado)=>{
 
@@ -55,26 +83,68 @@ APP.get('/listarEspecialidades/:external_id', [verifyToken, verifyAdmin],(reques
 
         if(especialidadesMedico){
 
-            let especialidadResponse = [];
+            // let especialidadResponse = [];
 
-            let respuesta = getEspecialidades();
-            respuesta.then(especialidades =>{
+            // let external_especialidades_medico = [];
 
-                especialidadResponse = [...especialidades];
-                especialidadesMedico.forEach(idEspecialidadMedico => {
-                        especialidadResponse = especialidadResponse.filter(especialidad => 
-                            especialidad._id.toString() !== idEspecialidadMedico.toString());
-                });
-            
-                return helpers.successMessage(response, 200, especialidadResponse);
-            
-            }).catch(error =>{
-                 return helpers.errorMessage(response, 500, 'Ocurrió un error al extraer las especialidades', error);
-            });
+            // especialidadesMedico.forEach(especialidad =>{
+            //     external_especialidades_medico.push(especialidad.external_id);
+            // });
 
+            // return response.json(especialidadesMedico);
+    
+            // return helpers.successMessage(response, 200, especialidadesMedico);
 
+            Especialidad.find({ "estado" : true , "_id" : { $nin :especialidadesMedico }})
+                        .skip(desde)
+                        .limit(5)
+                        .exec((error, especialidades) => {
+                            if (error) {
+                                return helpers.errorMessage(
+                                    response,
+                                    500,
+                                    "Error al extraer lista de especialidades"
+                                );
+                            }
+
+                            Especialidad.count({ "estado" : true, "_id" : { $nin: especialidadesMedico } }, (error, conteo) => {
+
+                                // especialidadResponse = [...especialidades];
+                                // especialidadesMedico.forEach(idEspecialidadMedico => {
+                                //         especialidadResponse = especialidadResponse.filter(especialidad => 
+                                //             especialidad._id.toString() !== idEspecialidadMedico.toString());
+                                // });
+                                finalSend = {
+                                    conteo,
+                                    especialidades
+                                }
+
+                                return helpers.successMessage(response, 200, finalSend);
+                            });
+                        });
         }else{
-            showEspecialidades(response);
+        Especialidad.find({ estado: true })
+                    .skip(desde)
+                    .limit(5)
+                    .select("-_id")
+                    .exec((error, especialidades) => {
+                        if (error) {
+                            return helpers.errorMessage(
+                                response,
+                                500,
+                                "Error al extraer lista de especialidades"
+                            );
+                        }
+
+                        Especialidad.count({ 'estado': true }, (error, conteo) => {
+                            finalSend = {
+                                conteo,
+                                especialidades
+                            }
+
+                            return helpers.successMessage(response, 200, finalSend);
+                        });
+                    });
         }
     });
 });
@@ -86,6 +156,8 @@ external_id de la especialidad
 APP.get('/listarDeterminadaEspecialidad/:external_id',[verifyToken, verifyAdminOrAllUser] ,(request, response) => {
 
     let external_id = request.params.external_id;
+    let desde = request.query.desde || 0;
+    desde = Number(desde);
 
     Especialidad.findOne({ 'estado': true, 'external_id': external_id }, (error, especialidadEncontrada) => {
 
@@ -97,26 +169,25 @@ APP.get('/listarDeterminadaEspecialidad/:external_id',[verifyToken, verifyAdminO
             return helpers.errorMessage(response, 400, 'No se encontro la especialidad');
         }
 
-        let idEspecialidad = especialidadEncontrada._id.toString();
+        let idEspecialidad = especialidadEncontrada._id;
 
-        let arregloMedicos = [];
-
-        let allMedicos = getMedicos();
-
-        allMedicos.then(medicos => {
-        
-            medicos.forEach(medico => {
-
-                let allEspecialidades = medico.especialidades;
-
-                if(allEspecialidades.includes(idEspecialidad)){
-                    arregloMedicos.push(medico);
+        Medico.find({'estado' : true, 'especialidades' :  idEspecialidad})
+            .skip(desde)
+            .limit(5)
+            .select('-_id')
+            .exec((error, medicos) => {
+              
+                if(error){
+                    return helpers.errorMessage(response, 500, 'Error al obtener la lista de médicos', error);
                 }
-            });
-            return helpers.successMessage(response, 200, arregloMedicos);
 
-        }).catch(error => {
-            return helpers.errorMessage(response, 500, 'Ocurrió un error al extraer los médicos', error);
+                Medico.count({'estado' : true, 'especialidades' :  idEspecialidad}, (error, conteo)=>{
+                    finalSend = {
+                        conteo,
+                        medicos
+                    }
+                    return helpers.successMessage(response, 200, finalSend);
+                });
       });
     });
 });
@@ -163,7 +234,7 @@ APP.put('/modificar/:external_id', [verifyToken, verifyAdmin],(request, response
 
     let external_id = request.params.external_id;
 
-    Especialidad.findOne({'external_id' : external_id}, (error, especialidadEncontrada) =>{
+    Especialidad.findOne({'estado' : true, 'external_id' : external_id}, (error, especialidadEncontrada) =>{
 
         if(error){
             return helpers.errorMessage(response, 500, 'Error en el servidor', error);

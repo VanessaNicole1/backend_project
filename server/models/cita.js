@@ -38,6 +38,12 @@ let citaSchema = new Schema({
         type : Schema.Types.ObjectId,
         ref : 'Consulta'
     },
+    realizada :{
+        type : Boolean
+    },
+    asistencia : {
+        type : Boolean
+    },
     created_At : {
         type : Date,
         required : [true, 'El created_At es requerido']

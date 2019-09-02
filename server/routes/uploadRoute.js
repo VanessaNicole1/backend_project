@@ -102,7 +102,7 @@ let subirPorTipo = (tipo, external_id, nombreArchivo, response) => {
                 if(error){
                     return helpers.errorMessage(response, 500, "Fallo la actualización", error);
                 }
-                return helpers.successMessage(response, 200, "Se ha actualizado correctamente");
+                return helpers.successMessage(response, 200, usuarioActualizado);
             });
         });
 }

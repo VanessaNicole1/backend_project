@@ -197,6 +197,7 @@ let compareExternalUser = (user, external_id) =>{
     }
     return false;
 }
+
 /*===================================
 Compara el external_id del usuario y su ROL
 =====================================*/

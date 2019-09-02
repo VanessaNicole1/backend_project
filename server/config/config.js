@@ -19,7 +19,7 @@ process.env.SEED = process.env.SEED || 'este-es-el-seed-desarrollo';
 /*===================================
 Expiration Token
 =====================================*/
-process.env.EXPIRES = 60 * 60 * 24 *30;
+process.env.EXPIRES = '24h';
 
 /*===================================
 Google

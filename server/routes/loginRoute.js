@@ -25,7 +25,26 @@ const client = new OAuth2Client(CLIENT_ID);
 Variables
 =====================================*/
 const APP = express();
+let  { verifyToken } = require('../middlewares/authentication');
 
+
+/*===================================
+Renovar Token
+=====================================*/
+APP.get('/renuevaToken', verifyToken, (request, response)=>{
+
+    let token = JWT.sign({
+        usuario : request.usuario
+    }, process.env.SEED, {expiresIn : process.env.EXPIRES});
+
+    let finalUser = {
+        user : request.usuario,
+        token,
+        menu : obtenerMenu(request.usuario.role)
+    }
+
+    return helpers.successMessage(response, 200,finalUser) ;
+});
 
 /*===================================
 Login
@@ -74,7 +93,8 @@ APP.post('/', (request, response)=>{
 
         let finalUser = {
             user,
-            token
+            token,
+            menu : obtenerMenu(CURRENT_ROLE)
         }
 
         return helpers.successMessage(response, 200, finalUser);
@@ -137,7 +157,8 @@ APP.post('/google', async(request, response) =>{
             let finalUser = {
                 message : "YES",
                 user,
-                token
+                token,
+                menu : obtenerMenu(process.env.USER_ROLE)
             }
 
             return helpers.successMessage(response, 200, finalUser);
@@ -170,6 +191,58 @@ let infoBody = (body) => {
                             ]);
 }
 
+
+function obtenerMenu(rol){
+    menu = [
+        {
+            titulo : 'Principal',
+            icono : 'mdi mdi-gauge',
+            submenu : [
+                { titulo : 'Dashboard', url: '/dashboard'},
+                { titulo : 'Progress', url: '/progress'},
+                { titulo : 'Graficas', url: '/graficas1'}           
+            ]
+        },
+        {
+            titulo : 'Citas',
+            icono : 'fa fa-address-book',
+            submenu : [
+                { titulo : 'Citas Diarias', url: '/citasDiarias'}
+            ]
+        },
+      
+    ];
+
+
+    if(rol === process.env.USER_ROLE){
+        menu[1].submenu.unshift({ titulo : 'Citas', url: '/citas'});
+        menu[1].submenu.unshift({ titulo : 'Agendar Cita', url: '/solicitarCita'});
+        menu[1].submenu.unshift({ titulo : 'Citas Realizadas', url: '/citasRealizadas'});
+    }
+
+    if(rol === process.env.MED_ROLE){
+        menu[1].submenu.unshift({ titulo : 'Citas', url: '/citas'});
+        menu[1].submenu.unshift({ titulo : 'Citas Realizadas', url: '/citasRealizadas'});
+        // menu[2].submenu.unshift({ titulo : 'Realizar Consulta', url: '/realizarConsulta'});
+        // menu[1].submenu.unshift({ titulo : 'Citas Diarias', url: '/citasDiarias'});
+    }
+
+    if(rol === process.env.ADMIN_ROLE){
+        menu.unshift(
+            {
+                titulo : 'Gestión Hospital',
+                icono : 'fa fa-save',
+                submenu : [
+                    { titulo : 'Pacientes', url: '/usuarios'},
+                    { titulo : 'Médicos', url: '/medicos'},
+                    { titulo : 'Especialidades', url: '/especialidades'},
+                ]
+            }
+        )
+    }
+
+    return menu;
+}
 module.exports = APP;
 
 

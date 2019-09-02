@@ -16,6 +16,8 @@ let consultaRoute = require('./consultaRoute');
 let loginRoute = require('./loginRoute');
 let uploadRoute = require('./uploadRoute');
 let imageRoute = require('./imageRoute');
+let busquedaRoute = require('./busquedaRoute');
+
 
 
 /*===================================
@@ -35,7 +37,8 @@ APP.use('/cita', citaRoute);
 APP.use('/consulta', consultaRoute);
 APP.use('/login',loginRoute );
 APP.use('/upload', uploadRoute);
-APP.use('/img', imageRoute)
+APP.use('/img', imageRoute);
+APP.use('/busqueda', busquedaRoute);
 
 module.exports = APP;
 

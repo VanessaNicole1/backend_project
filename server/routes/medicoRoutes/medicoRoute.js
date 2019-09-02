@@ -34,13 +34,26 @@ Listar todos los médicos activos
 =====================================*/
 APP.get('/listar', [verifyToken, verifyAdmin], (request, response)=>{
 
+    let desde = request.query.desde || 0;
+    desde = Number(desde);
+
     Medico.find({'estado' : true})
+            .skip(desde)
+            .limit(5)
+            .select('-_id')
             .exec((error, medicos) => {
 
                 if(error){
                     return helpers.errorMessage(response, 500, 'Error al obtener la lista de médicos', error);
                 }
-                return helpers.successMessage(response, 200, medicos);
+
+                Medico.count({'estado' : true}, (error, conteo)=>{
+                    finalSend = {
+                        conteo,
+                        medicos
+                    }
+                    return helpers.successMessage(response, 200, finalSend);
+                });
             });
 });
 
@@ -52,7 +65,7 @@ APP.get('/listarMedico/:external_id',  [verifyToken, verifyAdminOrMed],(request,
 
     let external_id = request.params.external_id;
 
-    Medico.find({'estado' : true, 'external_id' : external_id})
+    Medico.findOne({'estado' : true, 'external_id' : external_id})
             .populate({
                 path :'especialidades',
                 select : `${ESPECIALIDAD_PARAMS} -_id`,
@@ -356,6 +369,31 @@ APP.put('/eliminarEspecialidad/:external_id', [verifyToken, verifyAdmin] ,(reque
                     return helpers.successMessage(response, 200, medicoGuardado);
                 }); 
             });
+});
+
+APP.get('/verifyCedula/:cedula', (request, response)=>{
+
+    let cedula = request.params.cedula;
+
+    Medico.findOne({'estado' : true, 'cedula' : cedula}, (error, emailEncontrado) =>{
+
+        if(error){
+            return helpers.errorMessage(response, 500, 'Sucedio un error', error);
+        }
+        if(!emailEncontrado){
+            let send = {
+                equal : false
+            }
+
+            return helpers.successMessage(response, 200, send );
+        }else{
+            let send = {
+                equal : true,
+                mensaje : 'La cedula ya existe'
+            }
+            return helpers.successMessage(response, 200, send );
+        }
+    });
 });
 
 /******************************************************************************************************
