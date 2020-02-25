@@ -430,6 +430,14 @@ APP.post('/ingresarAdmin', (request, response)=>{
         if(adminBody.password){
             adminBody.password = BCRYPT.hashSync(adminBody.password, 10);
         }
+
+
+        adminBody.correo = helpers.getcorreoAdmin(
+            adminBody.nombres,
+            adminBody.apellidos,
+            adminBody.cedula
+        );
+
         
         adminBody.external_id = UUID();
         adminBody.estado = true;

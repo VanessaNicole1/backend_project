@@ -91,11 +91,29 @@ function validarCedula(cedula) {
     }
 }
 
+
+let getcorreoAdmin = (nombres, apellidos, cedula) => {
+
+    let namesArray = nombres.toLowerCase().split(' ');
+    let lastNamesArray = apellidos.toLowerCase().split(' ');
+
+    const EMAIL = "@admin.com";
+
+    if (namesArray.length > 1 && lastNamesArray.length > 1) {
+        let correo = `${namesArray[0]}${namesArray[1].substr(0,2)}.${lastNamesArray[0]}${cedula.substr(-3)}${EMAIL}`;
+
+        return correo;
+    }
+
+    return null;
+}
+
 module.exports = {
     errorMessage,
     successMessage,
     transformarHora, 
     getCorreo,
     verifyRole,
-    validarCedula
+    validarCedula,
+    getcorreoAdmin
 }

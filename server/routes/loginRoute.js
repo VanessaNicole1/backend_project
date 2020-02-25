@@ -210,6 +210,8 @@ function obtenerMenu(rol){
                 { titulo : 'Citas Diarias', url: '/citasDiarias'}
             ]
         },
+        
+        
       
     ];
 
@@ -218,13 +220,27 @@ function obtenerMenu(rol){
         menu[1].submenu.unshift({ titulo : 'Citas', url: '/citas'});
         menu[1].submenu.unshift({ titulo : 'Agendar Cita', url: '/solicitarCita'});
         menu[1].submenu.unshift({ titulo : 'Citas Realizadas', url: '/citasRealizadas'});
+
+        menu.push({
+            titulo : 'Consultas',
+            icono : 'fa fa-address-book',
+            submenu : [
+                { titulo : 'Ver Consultas', url: '/verConsultas'}          ]
+        });
+        
     }
 
     if(rol === process.env.MED_ROLE){
         menu[1].submenu.unshift({ titulo : 'Citas', url: '/citas'});
         menu[1].submenu.unshift({ titulo : 'Citas Realizadas', url: '/citasRealizadas'});
-        // menu[2].submenu.unshift({ titulo : 'Realizar Consulta', url: '/realizarConsulta'});
-        // menu[1].submenu.unshift({ titulo : 'Citas Diarias', url: '/citasDiarias'});
+        menu[2].submenu.unshift({ titulo : 'Ver Consultas', url: '/verConsultas'});
+        menu.push({
+            titulo : 'Consultas',
+            icono : 'fa fa-address-book',
+            submenu : [
+                { titulo : 'Ver Consultas', url: '/verConsultas'}            ]
+        });
+        
     }
 
     if(rol === process.env.ADMIN_ROLE){
