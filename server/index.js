@@ -34,7 +34,7 @@ APP.use(body_parser.json());
 Conection to MongoDB
 =====================================*/
 mongoose.set('runValidators', true);
-mongoose.connect('mongodb://localhost:27017/hospital', 
+mongoose.connect('mongodb+srv://vanessa:GzuQtw3jcPbZkCnr@cluster0-lkdhr.mongodb.net/test?retryWrites=true&w=majority', 
                 {
                     useFindAndModify : false,
                     useCreateIndex : true,
