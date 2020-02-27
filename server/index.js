@@ -33,8 +33,11 @@ APP.use(body_parser.json());
 /*===================================
 Conection to MongoDB
 =====================================*/
+
+//mongodb://localhost:27017/hospital
+//mongodb+srv://vanessa:GzuQtw3jcPbZkCnr@cluster0-lkdhr.mongodb.net/test?retryWrites=true&w=majority
 mongoose.set('runValidators', true);
-mongoose.connect('mongodb+srv://vanessa:GzuQtw3jcPbZkCnr@cluster0-lkdhr.mongodb.net/test?retryWrites=true&w=majority', 
+mongoose.connect('mongodb+srv://vanessa:GzuQtw3jcPbZkCnr@cluster0-lkdhr.mongodb.net/test?retryWrites=true&w=majority',
                 {
                     useFindAndModify : false,
                     useCreateIndex : true,

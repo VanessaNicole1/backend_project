@@ -233,13 +233,13 @@ function obtenerMenu(rol){
     if(rol === process.env.MED_ROLE){
         menu[1].submenu.unshift({ titulo : 'Citas', url: '/citas'});
         menu[1].submenu.unshift({ titulo : 'Citas Realizadas', url: '/citasRealizadas'});
-        menu[2].submenu.unshift({ titulo : 'Ver Consultas', url: '/verConsultas'});
-        menu.push({
-            titulo : 'Consultas',
-            icono : 'fa fa-address-book',
-            submenu : [
-                { titulo : 'Ver Consultas', url: '/verConsultas'}            ]
-        });
+        menu[1].submenu.unshift({ titulo : 'Ver Consultas', url: '/verConsultas'});
+        // menu.push({
+        //     titulo : 'Consultas',
+        //     icono : 'fa fa-address-book',
+        //     submenu : [
+        //         { titulo : 'Ver Consultas', url: '/verConsultas'}            ]
+        // });
         
     }
 
